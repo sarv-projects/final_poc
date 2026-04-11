@@ -1,13 +1,1 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
-.env
-venv/.env
-.env
+(frontend/index.html is a source file, so no need to add anything to .gitignore)
