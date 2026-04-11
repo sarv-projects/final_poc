@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperOwl – Voice AI Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #f5f7fa;
+            color: #1e293b;
+            line-height: 1.5;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, #5b5ef4, #8b5cf6);
+            color: white;
+            font-size: 14px;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 32px;
+            font-size: 15px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: white;
+            padding: 6px;
+            border-radius: 12px;
+            width: fit-content;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .tab {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab:hover {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .tab.active {
+            background: #5b5ef4;
+            color: white;
+        }
+
+        .tab .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-sub {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            background: white;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #5b5ef4;
+            box-shadow: 0 0 0 3px rgba(91, 94, 244, 0.1);
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        /* Input with prefix */
+        .input-with-icon {
+            display: flex;
+            align-items: center;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .input-with-icon:focus-within {
+            border-color: #5b5ef4;
+            box-shadow: 0 0 0 3px rgba(91, 94, 244, 0.1);
+        }
+
+        .input-with-icon .prefix {
+            padding: 10px 14px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 14px;
+            border-right: 1.5px solid #e2e8f0;
+        }
+
+        .input-with-icon input {
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        .input-with-icon input:focus {
+            box-shadow: none;
+        }
+
+        /* Toggle Switch */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .toggle-desc {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-slider::after {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: #5b5ef4;
+        }
+
+        .toggle input:checked + .toggle-slider::after {
+            transform: translateX(20px);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #5b5ef4;
+            color: white;
+            box-shadow: 0 2px 8px rgba(91, 94, 244, 0.25);
+        }
+
+        .btn-primary:hover {
+            background: #4a4dd4;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #475569;
+            border: 1.5px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            border-color: #5b5ef4;
+            color: #5b5ef4;
+        }
+
+        .btn-ai {
+            background: linear-gradient(135deg, #5b5ef4, #8b5cf6);
+            color: white;
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 14px;
+            font-size: 13px;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        /* Voice Grid */
+        .voice-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .voice-option {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .voice-option:hover {
+            border-color: #5b5ef4;
+            background: #f8faff;
+        }
+
+        .voice-option.selected {
+            border-color: #5b5ef4;
+            background: #f0f0ff;
+        }
+
+        .voice-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .voice-info {
+            flex: 1;
+        }
+
+        .voice-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .voice-tag {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .voice-play {
+            width: 28px;
+            height: 28px;
+            background: #5b5ef4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #f0fdf4;
+            border: 1.5px dashed #22c27a;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .info-box.inbound {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+
+        .info-box .icon {
+            font-size: 28px;
+        }
+
+        .info-box h3 {
+            margin-bottom: 4px;
+        }
+
+        .info-box p {
+            color: #475569;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* Shared Prompt Notice */
+        .shared-notice {
+            background: #f5f3ff;
+            border: 1.5px solid #8b5cf6;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .shared-notice p {
+            font-size: 13px;
+            color: #4c1d95;
+        }
+
+        .shared-notice strong {
+            color: #3b0764;
+        }
+
+        /* Method Pills */
+        .method-pills {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .method-pill {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1.5px solid #e2e8f0;
+            background: white;
+            color: #64748b;
+            transition: all 0.15s;
+        }
+
+        .method-pill.active {
+            background: #5b5ef4;
+            color: white;
+            border-color: #5b5ef4;
+        }
+
+        /* Slack Connect */
+        .slack-connect {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .slack-btn {
+            background: #4a154b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .slack-connected {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f4ede4;
+            color: #4a154b;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        /* Status Badge */
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-green {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        /* Hidden panels */
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
+        #slack-config {
+            display: none;
+        }
+
+        #slack-config.visible {
+            display: block;
+        }
+
+        /* Method note */
+        .method-note {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        </style>
+    <style>
+        /* Playground Additions */
+        .page-nav {
+            display: flex; gap: 20px; margin-bottom: 28px; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0px;
+        }
+        .page-tab {
+            background: none; border: none; font-size: 15px; font-weight: 600; color: #64748b; cursor: pointer; padding: 0 4px 12px; border-bottom: 2.5px solid transparent; margin-bottom: -1.5px; transition: color 0.15s;
+        }
+        .page-tab:hover { color: #1e293b; }
+        .page-tab.active { color: #5b5ef4; border-bottom-color: #5b5ef4; }
+        .top-page { display: none; }
+        .top-page.active { display: block; }
+
+        /* Chat Widget */
+        .pg-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+        .chat-sim { background: white; border: 1px solid #e2e8f0; border-radius: 16px; display: flex; flex-direction: column; height: 560px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; }
+        .chat-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px; background: #f8fafc; flex-shrink: 0; }
+        .online-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c27a; flex-shrink: 0; }
+        .chat-title { font-size: 15px; font-weight: 600; color: #1e293b; }
+        .chat-sub { font-size: 13px; color: #64748b; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; background: #f8fafc; }
+        .chat-msg { display: flex; gap: 10px; align-items: flex-start; }
+        .chat-msg.user { flex-direction: row-reverse; }
+        .c-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+        .c-av.ai { background: #5b5ef4; color: white; }
+        .c-av.hu { background: #e2e8f0; color: #475569; }
+        .c-bub { max-width: 80%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; color: #1e293b; }
+        .chat-msg.ai .c-bub { background: #f0f0ff; border-top-left-radius: 4px; border: 1px solid #e0e0fa; }
+        .chat-msg.user .c-bub { background: #e2e8f0; border-top-right-radius: 4px; }
+        .c-time { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+        
+        .chat-input-row { display: flex; gap: 10px; align-items: center; padding: 16px 20px; border-top: 1px solid #e2e8f0; background: white; flex-shrink: 0; }
+        .chat-input-row input { flex: 1; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 24px; font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.15s; background: #f8fafc; }
+        .chat-input-row input:focus { border-color: #5b5ef4; background: white; }
+        .send-btn { width: 44px; height: 44px; border-radius: 50%; background: #5b5ef4; border: none; color: white; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .send-btn:hover { background: #4a4dd4; }
+
+        .collect-panel { padding: 16px 20px; background: white; border-top: 1px solid #e2e8f0; flex-shrink: 0; animation: slideUp 0.3s ease-out; }
+        .collect-label { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 12px; }
+        .collect-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .collect-fields input { padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; transition: border-color 0.15s; }
+        .collect-fields input:focus { border-color: #5b5ef4; box-shadow: 0 0 0 3px rgba(91, 94, 244, 0.1); }
+        .call-now-btn { width: 10px; width: 100%; padding: 12px; border: none; border-radius: 10px; background: #22c27a; color: white; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; }
+        .call-now-btn:hover { background: #1a9e63; }
+
+        /* Live Call Panel */
+        .call-wrap { background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: none; }
+        .call-head { padding: 16px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; background: #f8fafc; }
+        .c-dot { width: 10px; height: 10px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; }
+        .c-dot.live { background: #22c27a; animation: livePulse 1.5s infinite; }
+        @keyframes livePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,194,122,0.4); } 50% { box-shadow: 0 0 0 6px rgba(34,194,122,0); } }
+        .c-lbl { font-size: 14px; font-weight: 600; color: #1e293b; flex: 1; }
+        .c-timer { font-family: monospace; font-size: 14px; color: #64748b; font-weight: 500; }
+        .call-info-bar { padding: 10px 16px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #64748b; background: #f8fafc; display: flex; align-items: center; gap: 8px; }
+        .call-status-badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #f0f0ff; color: #5b5ef4; }
+        .call-actions { padding: 16px; display: flex; align-items: center; justify-content: center; gap: 12px; background: white; border-top: 1px solid #e2e8f0; }
+        .cta-btn { height: 40px; border-radius: 10px; border: none; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 0 16px; transition: transform 0.15s, opacity 0.15s; }
+        .cta-btn.end { background: #ef4444; color: white; }
+        .cta-btn.end:hover { background: #dc2626; }
+        
+        .pg-notice { display: flex; align-items: flex-start; gap: 12px; background: #f0fdf4; border: 1.5px solid #22c27a; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; }
+        .pg-notice .icon { font-size: 24px; }
+        .pg-notice p { font-size: 14px; color: #166534; line-height: 1.5; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            🦉 SuperOwl Voice AI
+            <span>POC Configuration</span>
+        </h1>
+        <p class="subtitle">Configure inbound and outbound voice agents for your business.</p>
+
+        <!-- Page Navigation -->
+        <div class="page-nav">
+            <button class="page-tab active" onclick="switchPage('config')">⚙️ Configuration</button>
+            <button class="page-tab" onclick="switchPage('playground')">🎙️ Playground</button>
+        </div>
+
+        <div id="page-config" class="top-page active">
+        
+        <!-- Business Profile -->
+        <div class="card" style="margin-bottom: 24px;">
+            <div class="card-title">🏢 Business Profile</div>
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label>Business Name</label>
+                    <input type="text" id="biz-name" placeholder="E.g. Sweet Root">
+                </div>
+                <div class="form-group">
+                    <label>Inbound/Target Phone</label>
+                    <input type="text" id="biz-phone" placeholder="E.g. +91XXXXXXXXXX">
+                </div>
+                <div class="form-group">
+                    <label>Fallback Transfer Phone</label>
+                    <input type="text" id="biz-fallback" placeholder="E.g. +91XXXXXXXXXX">
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" data-tab="outbound">
+                <span class="dot" style="background: #5b5ef4;"></span>
+                📤 Outbound (Callback)
+            </button>
+            <button class="tab" data-tab="inbound">
+                <span class="dot" style="background: #22c27a;"></span>
+                📥 Inbound (Call Forward)
+            </button>
+        </div>
+
+        <!-- OUTBOUND PANEL -->
+        <div class="tab-panel active" id="panel-outbound">
+            <div class="info-box">
+                <span class="icon">📤</span>
+                <div>
+                    <h3>How outbound callbacks work</h3>
+                    <p>When the chat AI detects a customer needs a callback, it collects their Name and Phone, then initiates an AI Voice call — carrying the full chat context so the voice agent continues seamlessly. The same system prompt powers both inbound and outbound calls.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🎙️ Outbound Welcome Message</div>
+                <div class="card-sub">What the AI says when the customer picks up a callback.</div>
+                <div style="margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="margin: 0;">Message Template</label>
+                        <button class="btn btn-ai" onclick="alert('AI generate triggered')">✨ AI Generate</button>
+                    </div>
+                    <textarea id="outbound-welcome">Hi {customer_name}, this is Roo calling from {business_name}! I was just speaking with you on our chat. I'm here to help you further. How can I assist you today?</textarea>
+                    <div class="hint">Variables: {customer_name}, {business_name}, {chat_summary}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⚙️ Outbound-only Settings</div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Enable AI Voice Callbacks</div>
+                        <div class="toggle-desc">Auto-initiate an AI call when a customer requests a callback in chat</div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="enable-callbacks" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Inject Chat Context into Call</div>
+                        <div class="toggle-desc">Pass full chat history so the voice agent continues the conversation</div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="inject-chat" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Post-call Summary to Chat</div>
+                        <div class="toggle-desc">After the call ends, send an AI summary back to the chat widget</div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="post-call-chat">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- INBOUND PANEL -->
+        <div class="tab-panel" id="panel-inbound">
+            <div class="info-box inbound">
+                <span class="icon">📥</span>
+                <div>
+                    <h3>How inbound call forwarding works</h3>
+                    <p>Business owners forward their phone to your shared SuperOwl DID. When a customer calls, Vapi reads the SIP Diversion header to identify which business it is, then starts a personalised agent using that business's config.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🎙️ Inbound Welcome Message</div>
+                <div class="card-sub">What the AI says when it answers an inbound call.</div>
+                <div style="margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="margin: 0;">Message Template</label>
+                        <button class="btn btn-ai" onclick="alert('AI generate triggered')">✨ AI Generate</button>
+                    </div>
+                    <textarea id="inbound-welcome">Thank you for calling {{businessName}}! I'm Roo, your AI assistant. How can I help you today?</textarea>
+                    <div class="hint">Variables: {{businessName}}, {{city}}, {{hours}} — filled from the ANI registry per business.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">⚙️ Inbound-only Settings</div>
+                <div class="toggle-row">
+                    <div>
+                        <div class="toggle-label">Enable Inbound Call Handling</div>
+                        <div class="toggle-desc">Answer calls forwarded from registered business numbers</div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" id="enable-inbound" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- SHARED CONFIG (always visible) -->
+        <div class="shared-notice">
+            <span>🔗</span>
+            <p><strong>Shared System Prompt:</strong> The system prompt and voice below power both your outbound callbacks and inbound call‑forwarding agent. Changes here apply to all call types.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div class="card" style="margin-bottom: 0;">
+                <div class="card-title">🧠 Shared System Prompt</div>
+                <div class="card-sub">Defines personality, goals and flow for all voice calls.</div>
+                <div style="margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label style="margin: 0;">Prompt Template</label>
+                        <button class="btn btn-ai" onclick="alert('AI generate triggered')">✨ AI Generate</button>
+                    </div>
+                    <textarea id="system-prompt" style="min-height: 150px;">You are {{agentName}}, a warm and professional voice assistant for {{businessName}} in {{city}}.
+Business hours: {{hours}}.
+Services offered: {{services}}.
+
+Your goals:
+- Understand the caller's inquiry
+- Answer product/service questions clearly
+- For pricing or urgent matters, offer to transfer to the owner
+- Keep responses under 25 words — this is a voice call
+
+If transferring: "Let me connect you with our team directly."
+Then transfer to {{fallbackNumber}}.
+
+Always confirm the caller's name and callback number before ending.</textarea>
+                    <div class="hint">Variables: {{agentName}}, {{businessName}}, {{city}}, {{hours}}, {{services}}, {{fallbackNumber}}</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 0;">
+                <div class="card-title">🔊 Voice Selection</div>
+                <div class="card-sub">Choose the AI voice for your business.</div>
+                <div class="voice-grid" style="margin-top: 16px;">
+                    <div class="voice-option selected" data-voice="pMsXgVXv3BLzUgSXRplE">
+                        <div class="voice-avatar">👩</div>
+                        <div class="voice-info">
+                            <div class="voice-name">Priya</div>
+                            <div class="voice-tag">Warm · Female · Indian English</div>
+                        </div>
+                        <div class="voice-play">▶</div>
+                    </div>
+                    <div class="voice-option" data-voice="ack0QsRaQyDLnVyMQTSd">
+                        <div class="voice-avatar">👨</div>
+                        <div class="voice-info">
+                            <div class="voice-name">Arjun</div>
+                            <div class="voice-tag">Confident · Male · Indian English</div>
+                        </div>
+                        <div class="voice-play">▶</div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">⚙️ Behaviour Settings</div>
+            <div class="card-sub">These settings apply to all calls (inbound & outbound).</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 16px;">
+                <div>
+                    <div class="toggle-row" style="padding-right: 20px;">
+                        <div>
+                            <div class="toggle-label">Human Transfer on Escalation</div>
+                            <div class="toggle-desc">Transfer to business number when AI cannot resolve</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="transfer-escalation" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row" style="padding-right: 20px;">
+                        <div>
+                            <div class="toggle-label">Check with Owner Before Transfer</div>
+                            <div class="toggle-desc">Notify owner and wait for OK before patching through</div>
+                            <div class="method-pills" id="owner-check-method">
+                                <div class="method-pill active" data-method="slack" onclick="selectMethod(this)">💬 Slack message</div>
+                                <div class="method-pill" data-method="call" onclick="selectMethod(this)">📞 Call owner first</div>
+                                <div class="method-pill" data-method="both" onclick="selectMethod(this)">💬 + 📞 Both</div>
+                            </div>
+                            <div class="method-note" id="method-note">Owner gets a Slack message with Yes/No buttons. If no response in 30s, AI informs customer the team is busy.</div>
+                        </div>
+                        <label class="toggle" style="margin-top: 2px;">
+                            <input type="checkbox" id="check-owner" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div style="border-left: 1px solid #e2e8f0; padding-left: 20px;">
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Owner-initiated Handover</div>
+                            <div class="toggle-desc">Owner can request to take over any live call via Slack</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="owner-handover" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Live Transcript to Slack</div>
+                            <div class="toggle-desc">Stream real-time transcript chunks during the call</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="live-transcript" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div>
+                            <div class="toggle-label">Whisper Coaching via Slack</div>
+                            <div class="toggle-desc">Owner types a message; injected as AI context mid-call</div>
+                        </div>
+                        <label class="toggle">
+                            <input type="checkbox" id="whisper-coaching" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLACK INTEGRATION -->
+        <div class="card">
+            <div class="card-title">
+                <svg width="16" height="16" viewBox="0 0 54 54" fill="none" style="margin-right: 6px;">
+                    <path d="M19.712.133a5.381 5.381 0 0 0-5.376 5.387 5.381 5.381 0 0 0 5.376 5.386h5.376V5.52A5.381 5.381 0 0 0 19.712.133m0 14.365H5.376A5.381 5.381 0 0 0 0 19.884a5.381 5.381 0 0 0 5.376 5.387h14.336a5.381 5.381 0 0 0 5.376-5.387 5.381 5.381 0 0 0-5.376-5.386" fill="#36C5F0"/>
+                    <path d="M53.76 19.884a5.381 5.381 0 0 0-5.376-5.386 5.381 5.381 0 0 0-5.376 5.386v5.387h5.376a5.381 5.381 0 0 0 5.376-5.387m-14.336 0V5.52A5.381 5.381 0 0 0 34.048.133a5.381 5.381 0 0 0-5.376 5.387v14.364a5.381 5.381 0 0 0 5.376 5.387 5.381 5.381 0 0 0 5.376-5.387" fill="#2EB67D"/>
+                    <path d="M34.048 54a5.381 5.381 0 0 0 5.376-5.387 5.381 5.381 0 0 0-5.376-5.386h-5.376v5.386A5.381 5.381 0 0 0 34.048 54m0-14.365h14.336a5.381 5.381 0 0 0 5.376-5.386 5.381 5.381 0 0 0-5.376-5.387H34.048a5.381 5.381 0 0 0-5.376 5.387 5.381 5.381 0 0 0 5.376 5.386" fill="#ECB22E"/>
+                    <path d="M0 34.249a5.381 5.381 0 0 0 5.376 5.386 5.381 5.381 0 0 0 5.376-5.386v-5.387H5.376A5.381 5.381 0 0 0 0 34.249m14.336 0v14.364A5.381 5.381 0 0 0 19.712 54a5.381 5.381 0 0 0 5.376-5.387V34.249a5.381 5.381 0 0 0-5.376-5.387 5.381 5.381 0 0 0-5.376 5.387" fill="#E01E5A"/>
+                </svg>
+                Slack Integration
+            </div>
+            <div class="card-sub">Real-time transcripts, AI summaries, whisper coaching, and handover controls.</div>
+
+            <div class="slack-connect">
+                <button class="slack-btn" id="slack-connect-btn" onclick="connectSlack()">
+                    <svg width="16" height="16" viewBox="0 0 54 54" fill="none">
+                        <path d="M19.712.133a5.381 5.381 0 0 0-5.376 5.387 5.381 5.381 0 0 0 5.376 5.386h5.376V5.52A5.381 5.381 0 0 0 19.712.133m0 14.365H5.376A5.381 5.381 0 0 0 0 19.884a5.381 5.381 0 0 0 5.376 5.387h14.336a5.381 5.381 0 0 0 5.376-5.387 5.381 5.381 0 0 0-5.376-5.386" fill="#fff"/>
+                        <path d="M53.76 19.884a5.381 5.381 0 0 0-5.376-5.386 5.381 5.381 0 0 0-5.376 5.386v5.387h5.376a5.381 5.381 0 0 0 5.376-5.387m-14.336 0V5.52A5.381 5.381 0 0 0 34.048.133a5.381 5.381 0 0 0-5.376 5.387v14.364a5.381 5.381 0 0 0 5.376 5.387 5.381 5.381 0 0 0 5.376-5.387" fill="#fff"/>
+                        <path d="M34.048 54a5.381 5.381 0 0 0 5.376-5.387 5.381 5.381 0 0 0-5.376-5.386h-5.376v5.386A5.381 5.381 0 0 0 34.048 54m0-14.365h14.336a5.381 5.381 0 0 0 5.376-5.386 5.381 5.381 0 0 0-5.376-5.387H34.048a5.381 5.381 0 0 0-5.376 5.387 5.381 5.381 0 0 0 5.376 5.386" fill="#fff"/>
+                        <path d="M0 34.249a5.381 5.381 0 0 0 5.376 5.386 5.381 5.381 0 0 0 5.376-5.386v-5.387H5.376A5.381 5.381 0 0 0 0 34.249m14.336 0v14.364A5.381 5.381 0 0 0 19.712 54a5.381 5.381 0 0 0 5.376-5.387V34.249a5.381 5.381 0 0 0-5.376-5.387 5.381 5.381 0 0 0-5.376 5.387" fill="#fff"/>
+                    </svg>
+                    Connect Slack Workspace
+                </button>
+                <span id="slack-status" style="color: #94a3b8; font-size: 13px;">Not connected</span>
+                <div id="slack-connected" style="display: none;">
+                    <div class="slack-connected">✅ sweetroot-workspace.slack.com</div>
+                    <button class="btn btn-secondary btn-sm" onclick="disconnectSlack()">Disconnect</button>
+                </div>
+            </div>
+
+            <div id="slack-config">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Live Call Channel</label>
+                        <div class="input-with-icon">
+                            <span class="prefix">#</span>
+                            <input type="text" id="live-channel" value="voice-calls-live">
+                        </div>
+                        <div class="hint">Receives real-time transcript & handover controls.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Post-Call Summary Channel</label>
+                        <div class="input-with-icon">
+                            <span class="prefix">#</span>
+                            <input type="text" id="summary-channel" value="voice-calls-summary">
+                        </div>
+                        <div class="hint">Receives AI summary after each call.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="resetForm()">Discard Changes</button>
+            <button class="btn btn-primary" onclick="saveConfiguration()">💾 Save Configuration</button>
+        </div>
+        </div> <!-- End page-config -->
+
+        <!-- PLAYGROUND PAGE -->
+        <div id="page-playground" class="top-page">
+            <div class="pg-notice">
+                <span class="icon">📤</span>
+                <div>
+                    <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 4px; color: #166534;">Outbound Callback Mode</h3>
+                    <p>Chat with Roo below. If you ask for a callback or use trigger words like "book" or "contact", she will prompt for your details and initiate a live AI call to your phone.</p>
+                </div>
+            </div>
+
+            <div class="pg-grid">
+                <!-- Chat Simulator -->
+                <div class="chat-sim">
+                    <div class="chat-header">
+                        <div class="online-dot"></div>
+                        <div>
+                            <div class="chat-title">Sweet Root – Toys & Memories</div>
+                            <div class="chat-sub">Powered by Roo · Outbound test</div>
+                        </div>
+                        <button onclick="resetChat()" class="btn btn-secondary btn-sm" style="margin-left: auto;">↺ Reset</button>
+                    </div>
+                    
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="chat-msg ai">
+                            <div class="c-av ai">R</div>
+                            <div>
+                                <div class="c-bub">Hi! I'm Roo 🦉, your assistant for Sweet Root. How can I help you today?</div>
+                                <div class="c-time">Roo · just now</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="collect-panel" id="collect-panel" style="display: none;">
+                        <div class="collect-label">📞 Enter your details for the AI callback</div>
+                        <div class="collect-fields">
+                            <input type="text" id="pg-name" placeholder="Your name">
+                            <input type="tel" id="pg-phone" placeholder="+91 9XXXXXXXXX">
+                        </div>
+                        <button class="call-now-btn" onclick="triggerOutboundCall()" id="call-now-btn">📞 Call me now</button>
+                    </div>
+
+                    <div class="chat-input-row" id="chat-input-row">
+                        <input type="text" id="chat-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendChat()">
+                        <button class="send-btn" onclick="sendChat()">➤</button>
+                    </div>
+                </div>
+
+                <!-- Right Side: Live Call Panel -->
+                <div>
+                    <div class="card" style="margin-bottom: 16px;">
+                        <h3 style="font-size: 14px; margin-bottom: 8px;">🔊 Target Voice</h3>
+                        <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">This test will use the voice you selected in Configuration.</p>
+                        <div style="padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 500;" id="pg-selected-voice">
+                            👩 Priya (Warm · Indian)
+                        </div>
+                    </div>
+
+                    <div id="call-panel" class="call-wrap">
+                        <div class="call-head">
+                            <div class="c-dot live"></div>
+                            <div class="c-lbl">Live Call</div>
+                            <div class="c-timer">Active</div>
+                        </div>
+                        <div class="call-info-bar">
+                            <span class="call-status-badge">OUTBOUND</span>
+                            Calling <span style="font-family: monospace; color: #1e293b;" id="pg-calling-num">...</span>
+                        </div>
+                        <div style="padding: 24px; text-align: center; color: #64748b; font-size: 14px;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📱</div>
+                            Call initiated via VAPI.<br>Please check your phone.
+                            <div style="margin-top: 16px; font-size: 12px;">(Live transcript streaming not implemented in this POC UI)</div>
+                        </div>
+                        <div class="call-actions" style="margin-top: 20px;">
+                            <button class="cta-btn end" onclick="endTestCall()">✕ Hide Panel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // ── Constants ──────────────────────────────────────────────────────────
+        const BASE_URL = '';  // Same-origin — served by FastAPI at localhost:8000
+
+        let currentBusinessId = null;
+
+        // ── Tab switching ──────────────────────────────────────────────────────
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                const target = tab.dataset.tab;
+                document.getElementById(`panel-${target}`).classList.add('active');
+            });
+        });
+
+        // ── Voice selection ────────────────────────────────────────────────────
+        document.querySelectorAll('.voice-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.voice-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+            });
+        });
+
+        // ── Method pill selection ──────────────────────────────────────────────
+        function selectMethod(el) {
+            const parent = el.parentElement;
+            parent.querySelectorAll('.method-pill').forEach(p => p.classList.remove('active'));
+            el.classList.add('active');
+
+            const method = el.dataset.method;
+            const note = document.getElementById('method-note');
+            const notes = {
+                'slack': 'Owner gets a Slack message with Yes/No buttons. If no response in 30s, AI informs customer the team is busy.',
+                'call': 'SuperOwl calls the owner first. If they pick up and confirm, the call is transferred. If no answer in 15s, AI stays on.',
+                'both': 'Slack message is sent immediately. SuperOwl also calls the owner simultaneously. First response wins.'
+            };
+            note.textContent = notes[method] || '';
+        }
+
+        function selectMethodByValue(method) {
+            const pill = document.querySelector(`.method-pill[data-method="${method}"]`);
+            if (pill) selectMethod(pill);
+        }
+
+        // ── Toast notifications ────────────────────────────────────────────────
+        function showToast(message, type = 'success') {
+            const existing = document.getElementById('superowl-toast');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'superowl-toast';
+            toast.style.cssText = `
+                position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+                background: ${type === 'success' ? '#22c27a' : '#ef4444'};
+                color: white; padding: 14px 20px; border-radius: 12px;
+                font-size: 14px; font-weight: 600;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                display: flex; align-items: center; gap: 10px;
+                animation: slideUp 0.25s ease;
+            `;
+            toast.textContent = message;
+
+            const style = document.createElement('style');
+            style.textContent = '@keyframes slideUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }';
+            document.head.appendChild(style);
+
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3500);
+        }
+
+        // ── No-business banner ─────────────────────────────────────────────────
+        function showNoBusinessBanner(msg) {
+            document.querySelector('.container').innerHTML = `
+                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:16px;text-align:center;">
+                    <div style="font-size:48px">🦉</div>
+                    <h2 style="font-size:22px;font-weight:700">No business loaded</h2>
+                    <p style="color:#64748b;font-size:14px;max-width:400px">${msg}</p>
+                    <p style="color:#94a3b8;font-size:13px">Seed demo data first:<br><code style="background:#f1f5f9;padding:4px 10px;border-radius:6px">POST http://localhost:8000/playground/seed</code></p>
+                </div>
+            `;
+        }
+
+        // ── Slack UI helpers ───────────────────────────────────────────────────
+        function showSlackConnected(workspaceName) {
+            document.getElementById('slack-connect-btn').style.display = 'none';
+            document.getElementById('slack-status').style.display = 'none';
+            const connectedEl = document.getElementById('slack-connected');
+            connectedEl.style.display = 'flex';
+            const chip = connectedEl.querySelector('.slack-connected');
+            if (chip && workspaceName) chip.textContent = `✅ ${workspaceName}`;
+            document.getElementById('slack-config').classList.add('visible');
+        }
+
+        // ── Load config from backend ───────────────────────────────────────────
+        async function loadConfig() {
+            // business_id comes from URL query param — each business owner has their own URL
+            // In production this would come from auth session
+            const params = new URLSearchParams(window.location.search);
+            const bizId = params.get('business_id');
+
+            if (!bizId) {
+                showNoBusinessBanner('No <code>business_id</code> in URL.<br>Visit <code>/?business_id=&lt;uuid&gt;</code>');
+                return;
+            }
+
+            let biz;
+            try {
+                const res = await fetch(`${BASE_URL}/businesses/${bizId}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                biz = await res.json();
+            } catch (e) {
+                showNoBusinessBanner(`Could not load business: ${e.message}`);
+                return;
+            }
+
+            currentBusinessId = biz.id;
+
+            // ── Business Profile ───────────────────────────────────────────────
+            document.getElementById('biz-name').value = biz.display_name || '';
+            document.getElementById('biz-phone').value = biz.phone_number || '';
+            document.getElementById('biz-fallback').value = biz.fallback_number || '';
+
+            // ── Outbound tab ───────────────────────────────────────────────────
+            document.getElementById('outbound-welcome').value =
+                biz.outbound_welcome_template || '';
+            document.getElementById('enable-callbacks').checked =
+                !!biz.enable_voice_callbacks;
+            document.getElementById('inject-chat').checked =
+                !!biz.inject_chat_context;
+            document.getElementById('post-call-chat').checked =
+                !!biz.post_call_summary_to_chat;
+
+            // ── Inbound tab ────────────────────────────────────────────────────
+            document.getElementById('inbound-welcome').value =
+                biz.inbound_welcome_template || '';
+            document.getElementById('enable-inbound').checked =
+                !!biz.enable_inbound_call_handling;
+
+            // ── Behaviour toggles ──────────────────────────────────────────────
+            document.getElementById('transfer-escalation').checked =
+                !!biz.human_transfer_on_escalation;
+            document.getElementById('check-owner').checked =
+                !!biz.check_with_owner_before_transfer;
+            document.getElementById('owner-handover').checked =
+                !!biz.owner_initiated_handover;
+            document.getElementById('live-transcript').checked =
+                !!biz.live_transcript_to_slack;
+            document.getElementById('whisper-coaching').checked =
+                !!biz.whisper_coaching_via_slack;
+
+            // ── Owner check method pill ────────────────────────────────────────
+            selectMethodByValue(biz.owner_check_method || 'slack');
+
+            // ── Voice selection ────────────────────────────────────────────────
+            document.querySelectorAll('.voice-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.voice === biz.voice_id);
+            });
+
+            // ── Slack channels ─────────────────────────────────────────────────
+            document.getElementById('live-channel').value =
+                biz.slack_live_channel || '';
+            document.getElementById('summary-channel').value =
+                biz.slack_summary_channel || '';
+
+            // ── Slack connection state ─────────────────────────────────────────
+            if (biz.nango_connection_id) {
+                showSlackConnected(biz.slack_workspace || 'Connected workspace');
+            }
+
+            // ── Shared system prompt ───────────────────────────────────────────
+            try {
+                const promptRes = await fetch(`${BASE_URL}/prompts/shared`);
+                const promptData = await promptRes.json();
+                document.getElementById('system-prompt').value = promptData.prompt || '';
+            } catch (e) {
+                console.warn('Could not load shared prompt:', e);
+            }
+        }
+
+        // ── Save config to backend ─────────────────────────────────────────────
+        async function saveConfiguration() {
+            if (!currentBusinessId) {
+                showToast('No business loaded — cannot save.', 'error');
+                return;
+            }
+
+            const selectedVoice = document.querySelector('.voice-option.selected')?.dataset.voice
+                || 'pMsXgVXv3BLzUgSXRplE';
+            const selectedMethod = document.querySelector('.method-pill.active')?.dataset.method
+                || 'slack';
+
+            try {
+                // 1. Save shared system prompt
+                const promptRes = await fetch(`${BASE_URL}/prompts/shared`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: document.getElementById('system-prompt').value
+                    })
+                });
+                if (!promptRes.ok) throw new Error('Failed to save shared prompt');
+
+                // 2. Save business config via PUT /businesses/{id}
+                const payload = {
+                    display_name: document.getElementById('biz-name').value,
+                    phone_number: document.getElementById('biz-phone').value,
+                    fallback_number: document.getElementById('biz-fallback').value,
+                    voice_id: selectedVoice,
+                    outbound_welcome_template: document.getElementById('outbound-welcome').value,
+                    enable_voice_callbacks: document.getElementById('enable-callbacks').checked,
+                    inject_chat_context: document.getElementById('inject-chat').checked,
+                    post_call_summary_to_chat: document.getElementById('post-call-chat').checked,
+                    inbound_welcome_template: document.getElementById('inbound-welcome').value,
+                    enable_inbound_call_handling: document.getElementById('enable-inbound').checked,
+                    human_transfer_on_escalation: document.getElementById('transfer-escalation').checked,
+                    check_with_owner_before_transfer: document.getElementById('check-owner').checked,
+                    owner_check_method: selectedMethod,
+                    owner_initiated_handover: document.getElementById('owner-handover').checked,
+                    live_transcript_to_slack: document.getElementById('live-transcript').checked,
+                    whisper_coaching_via_slack: document.getElementById('whisper-coaching').checked,
+                    slack_live_channel: document.getElementById('live-channel').value,
+                    slack_summary_channel: document.getElementById('summary-channel').value,
+                };
+
+                const bizRes = await fetch(`${BASE_URL}/businesses/${currentBusinessId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!bizRes.ok) {
+                    const err = await bizRes.json().catch(() => ({}));
+                    throw new Error(err.detail || `HTTP ${bizRes.status}`);
+                }
+
+                showToast('✅ Configuration saved successfully');
+            } catch (e) {
+                showToast(`❌ Save failed: ${e.message}`, 'error');
+                console.error('Save error:', e);
+            }
+        }
+
+        // ── Slack connect ──────────────────────────────────────────────────────
+        function connectSlack() {
+            const phone = prompt('Enter your business phone number (e.g. +919901540581):');
+            if (!phone) return;
+
+            fetch(`${BASE_URL}/onboarding/connect/session?phone=${encodeURIComponent(phone)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.connect_link) {
+                        window.open(data.connect_link, '_blank');
+                        // Optimistically show connected state
+                        // Real state update happens after OAuth callback triggers Nango webhook
+                        showSlackConnected('Connecting…');
+                        showToast('🔗 Slack OAuth opened — complete the flow in the new tab');
+                    } else {
+                        showToast('❌ Could not get Slack connect link', 'error');
+                    }
+                })
+                .catch(err => showToast(`❌ Error: ${err.message}`, 'error'));
+        }
+
+        function disconnectSlack() {
+            document.getElementById('slack-connect-btn').style.display = 'flex';
+            document.getElementById('slack-status').style.display = 'inline';
+            document.getElementById('slack-connected').style.display = 'none';
+            document.getElementById('slack-config').classList.remove('visible');
+        }
+
+        // ── Reset form ─────────────────────────────────────────────────────────
+        function resetForm() {
+            if (confirm('Discard all unsaved changes and reload from the database?')) {
+                loadConfig();
+            }
+        }
+
+        // ── Initialize ─────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+
+            // Initialize method note for active pill
+            const activeMethod = document.querySelector('.method-pill.active');
+            if (activeMethod) selectMethod(activeMethod);
+        });
+
+        // ── Page Switching ─────────────────────────────────────────────────────
+        function switchPage(page) {
+            document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.top-page').forEach(p => p.classList.remove('active'));
+            document.querySelector(`.page-tab[onclick="switchPage('${page}')"]`).classList.add('active');
+            document.getElementById(`page-${page}`).classList.add('active');
+            
+            if (page === 'playground') {
+                const sv = document.querySelector('.voice-option.selected');
+                if (sv) {
+                    const name = sv.querySelector('.voice-name').textContent;
+                    const tag = sv.querySelector('.voice-tag').textContent;
+                    document.getElementById('pg-selected-voice').textContent = `✅ ${name} (${tag})`;
+                }
+            }
+        }
+
+        // ── Playground Chat Simulation ─────────────────────────────────────────
+        function appendMsg(role, text) {
+            const msgs = document.getElementById('chat-messages');
+            const isUser = role === 'user';
+            msgs.innerHTML += `
+                <div class="chat-msg ${isUser ? 'user' : 'ai'}">
+                    <div class="c-av ${isUser ? 'hu' : 'ai'}">${isUser ? 'U' : 'R'}</div>
+                    <div>
+                        <div class="c-bub">${text}</div>
+                        <div class="c-time">${isUser ? 'You' : 'Roo'} · just now</div>
+                    </div>
+                </div>
+            `;
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        async function sendChat() {
+            const inp = document.getElementById('chat-input');
+            const text = inp.value.trim();
+            if (!text) return;
+            
+            appendMsg('user', text);
+            inp.value = '';
+            
+            const lower = text.toLowerCase();
+            const triggers = ['callback', 'book', 'call', 'contact', 'team', 'speak', 'talk'];
+            const needsCallback = triggers.some(t => lower.includes(t));
+
+            // Simulating API delay
+            setTimeout(() => {
+                if (needsCallback) {
+                    appendMsg('ai', "I'd be happy to arrange a callback so our team can help you properly! Please share your details below.");
+                    document.getElementById('collect-panel').style.display = 'block';
+                } else {
+                    appendMsg('ai', "That's interesting! I can help you with Sweet Root activities, pricing, or getting you in touch with the owner. Would you like to speak with someone?");
+                }
+            }, 800);
+        }
+
+        function resetChat() {
+            document.getElementById('chat-messages').innerHTML = `
+                <div class="chat-msg ai">
+                    <div class="c-av ai">R</div>
+                    <div>
+                        <div class="c-bub">Hi! I'm Roo 🦉, your assistant for Sweet Root. How can I help you today?</div>
+                        <div class="c-time">Roo · just now</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('collect-panel').style.display = 'none';
+            document.getElementById('call-panel').style.display = 'none';
+            document.getElementById('pg-name').value = '';
+            document.getElementById('pg-phone').value = '';
+        }
+
+        async function triggerOutboundCall() {
+            const name = document.getElementById('pg-name').value.trim();
+            const phone = document.getElementById('pg-phone').value.trim();
+            
+            if (!name || !phone) {
+                showToast('Please enter your name and phone number', 'error');
+                return;
+            }
+
+            const formatPhone = (p) => {
+                let cleaned = p.replace(/\D/g, '');
+                return cleaned.length === 10 ? '+91' + cleaned : '+' + cleaned;
+            };
+
+            const finalPhone = formatPhone(phone);
+            document.getElementById('pg-calling-num').textContent = finalPhone;
+
+            const btn = document.getElementById('call-now-btn');
+            btn.textContent = 'Initiating...';
+            btn.disabled = true;
+
+            const summaryNodes = document.querySelectorAll('.chat-msg .c-bub');
+            const summaryArray = Array.from(summaryNodes).map(node => {
+                const isUser = node.parentElement.parentElement.classList.contains('user');
+                return (isUser ? 'Customer: ' : 'Assistant: ') + node.textContent;
+            });
+
+            try {
+                const payload = {
+                    business_id: currentBusinessId,
+                    customer_name: name,
+                    customer_phone: finalPhone,
+                    chat_summary: summaryArray.join('\n')
+                };
+
+                const res = await fetch(`${BASE_URL}/trigger/outbound`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Failed to trigger VAPI call (HTTP ${res.status})`);
+                }
+
+                showToast('📞 Call initiated! Check your phone.', 'success');
+                document.getElementById('call-panel').style.display = 'block';
+                document.getElementById('collect-panel').style.display = 'none';
+            } catch (err) {
+                console.error(err);
+                showToast(`❌ Error: ${err.message}`, 'error');
+            } finally {
+                btn.textContent = '📞 Call me now';
+                btn.disabled = false;
+            }
+        }
+
+        function endTestCall() {
+            document.getElementById('call-panel').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

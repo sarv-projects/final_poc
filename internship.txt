@@ -1,0 +1,3371 @@
+SuperOwl Voice AI Internship – Complete Record (Feb 2026 – Apr 10, 2026)
+Intern: Sarvesh Bhattacharyya
+Company: Beaut Group (SuperOwl)
+Duration: Feb 2026 – Present
+
+PHASE 1 – Research & Architecture (Week 1-2)
+What you did:
+Read and analyzed the existing SuperOwl production codebase (RAG chatbot, Firebase, Cloud Run, credits system, KB management, WhatsApp button). Proposed Premium Plugin Layer – Nango for OAuth, LangGraph for orchestration, CrewAI for parallel agents, n8n for workflows, MCP for tool exposure. This was your own architectural proposal from reading and understanding the existing system. Manager approved direction.
+
+PHASE 2 – Slack Integration (Week 3-4)
+What you built:
+Nango OAuth flow – /connect/slack, /webhook/slack. Got hardcoded message posting to verify channel was working. Hit Nango proxy issues when trying to send messages back through Nango proxy. Left at working POC stage. Manager said move on – not abandoned, demonstrated and deprioritized for final integration.
+
+Bugs/Issues:
+
+Nango proxy URL wrong (tried /proxy/slack/chat.postMessage → 404 HTML; changed to /proxy/chat.postMessage).
+
+WSL2 async httpx couldn't reach Slack → fixed with run_in_executor using sync httpx in thread.
+
+PHASE 3 – Notion MCP (Week 5)
+What you built:
+Connected Notion MCP server. Built notion_agent/ folder with 12 tools fetching live Notion data. Hit same Nango proxy issues. Switched to direct Notion internal integration token. Left at working POC stage. Manager said move on.
+
+PHASE 4 – RAG Knowledge Base Pipeline (Week 6-7)
+What you built:
+
+kb/embeddings.py – Pinecone vector store and search using llama-text-embed-v2.
+
+kb/notion_sync.py – Notion pages fetched, chunked at 500 chars with 50 overlap, stored in Pinecone.
+
+Synced 7 chunks for Troy Blocks.
+
+Bugs fixed:
+Default namespace was dental_clinic → changed to superowl-proto.
+
+PHASE 5 – Chat Agent (Week 8)
+What you built:
+agent/chat_agent.py – Groq client with llama-3.3-70b-versatile. RAG pipeline with context-aware conversation history. System prompt tuned for Troy Blocks.
+Pylance type warning on return type – fixed with or "".
+
+PHASE 6 – Streamlit Frontend (Week 9)
+What you built:
+frontend/app.py – chat UI with session state, RAG responses, callback detection on booking keywords, callback form collecting name and phone, POSTs to /trigger-call.
+
+Bugs fixed:
+
+Phone number logic ran outside if submitted block → ran on every rerender.
+
+Conversation summary sent as raw Python list string → fixed to formatted string.
+
+Callback button flickered due to session rerun.
+
+conversation_summary was being sent as raw list instead of formatted text – fixed.
+
+PHASE 7 – VAPI Voice Pipeline – Main Deliverable (Week 10-14)
+What you designed (your architecture):
+Dual agent architecture from manager’s problem statement:
+
+Ananya – customer-facing with RAG.
+
+Owner PA – owner-facing for yes/no decision.
+
+What you built:
+backend/main.py with all endpoints. Two VAPI assistants. Five tools.
+
+Bugs fixed in order (critical list):
+
+assistantOverrides.model missing provider and model fields → 400 error → added all three.
+
+toolConfigurations field rejected by VAPI → switched to tools:append.
+
+controlUrl hardcoded wrong (/call/{id}/control) → fixed to use monitor.controlUrl from call creation response.
+
+Transfer dropping on VAPI free SIP → discovered VAPI free SIP doesn’t support PSTN type number transfer → switched to SIP URI format sip:+91XXXXXXXXXX@40942180.sip.vobiz.ai.
+
+OWNER_PHONE in .env had quotes around value → E.164 validation failure → removed quotes.
+
+Slack ConnectTimeout in WSL2 → async httpx inside FastAPI couldn’t reach Slack → fixed with run_in_executor.
+
+slack_msg undefined inside closure → defined before inner function.
+
+PA prompt double sentence bug – “Ravi wants to Customer wants to…” → fixed by using call_summary directly instead of customer_name wants to call_summary.
+
+isServerUrlSecretSet field exported by VAPI but rejected on creation → added to STRIP_FIELDS in migration script.
+
+Transfer via tool call unreliable → switched to direct POST to controlUrl with transfer payload.
+
+blocking:false on notify_owner → Ananya said owner unavailable immediately → changed to blocking:true.
+
+return statement outside if block in send_background_message → indentation bug.
+
+tools:append injected tool had no function name → Ananya couldn’t reference it → added function name and description.
+
+PA calling end_call_tool simultaneously with report_decision → owner phone going idle before SIP transfer completed → removed end_call_tool from YES path in PA prompt.
+
+Ananya bypassing notify_owner flow on urgent customer requests → calling transfer_call_tool directly → fixed with “SYSTEM-CONTROLLED ONLY” guardrail and “calling this tool yourself will cause failure” framing.
+
+PA prompt step 2 still had customer_name wants to prefix even after previous fix → removed completely, left only call_summary.
+
+PHASE 8 – Indian Telephony Discovery (Week 15)
+Problem: Original Twilio US number worked for calling Indian numbers but SIP transfer broke on VAPI free SIP.
+Your research: Exotel, Plivo, Vonage → found Vobiz SIP.
+Change: All transfer destinations from type: number to type: sip with Vobiz URI format. Confirmed working end to end on Indian numbers via assistant-forwarded-call in end-of-call-report.
+
+PHASE 9 – Slack Notification After Call (Week 16)
+What you built:
+/vapi-webhook catches end-of-call-report. Extracts customer name, phone, duration, outcome, transcript, timestamp. Only fires for Ananya calls. Posts Block Kit message. WSL2 async fix applied again.
+
+PHASE 10 – VAPI Migration Script (Week 17)
+What you built:
+vapi_migrate.py – export all tools, assistants, phone numbers from current account to JSON. Import to new account – remaps tool IDs inside assistants, updates webhook URLs to new ngrok, auto-updates .env. Added STRIP_FIELDS for isServerUrlSecretSet. Added tool_identity_keys for smarter deduplication. Added --skip-webhooks flag. Handled multiple account migrations.
+
+PHASE 11 – Warm Transfer Attempt and Rollback (Week 18)
+What you did: Measured PA delay yourself at 11-15 seconds. Proposed warm-transfer-experimental to reduce it. Built it. Hit “more than one transferCall” error repeatedly. Went in circles with dashboard tool vs injected tool conflict. Discovered warm-transfer-experimental not reliably supported on Vobiz SIP. Made the call to revert to backup – restored from zip. Good judgment – knew when to stop.
+
+PHASE 12 – Competitive Research (Week 19)
+Manager sent five competitor links. You researched and summarized YouMail, RoboKiller, Hiya, RealCall, Google Call Screen – architecture, ML approach, differentiators. Used for product direction on inbound screening feature.
+
+PHASE 13 – Prototype Packaging for Manager (Week 20)
+Packaged prototype as superowl_prototype_final.zip with README for non-technical Windows/WSL users. Fixed README multiple times. Helped manager set up on his laptop. Debugged WSL vs Windows filesystem issue (/mnt vs WSL home directory). Explained ngrok authtoken setup.
+
+PHASE 14 – Inbound Call Screening POC Design (Week 21)
+What you designed (your own FSM):
+States: IDLE, ACTIVE, TAKEOVER_INITIATED, TAKEOVER_ACTIVE, ENDED.
+Designed Slack as owner interface with four channels. Whisper injection concept. USSD forwarding approach. This was your own architecture from scratch.
+
+PHASE 15 – Inbound Build (Week 22-24)
+What you built:
+superowl_inbound/ project – refactored from single main.py to full modular architecture: app/core, app/routers, app/services. Vobiz inbound working. SIP headers extracting correctly. Business registry lookup working.
+
+Bugs/Issues during inbound build:
+
+Base assistant had no system prompt → assistant just said hello and went silent → added {{variable}} placeholders and system prompt.
+
+callerNumber not passed to variableValues → added to _handle_assistant_request.
+
+Dead code BUSINESS_CONFIG and DEFAULT_ASSISTANT_CONFIG → removed.
+
+Double import of get_config_by_ani → removed one.
+
+Diversion header arriving empty when calling Vobiz number directly → only populated during real USSD forwarding.
+
+Nango prefetch_connections field not valid → removed.
+
+Nango proxy URL wrong → tried /proxy/slack/chat.postMessage → Slack returned 404 HTML → changed to /proxy/chat.postMessage.
+
+channel_not_found on Slack → wrong channel ID → fixed by getting correct ID from Slack.
+
+not_in_channel → bot not invited → /invite @testnango fixed.
+
+Nango integration scopes not enabled – you found this yourself by reading docs → enabled channel creation permissions.
+
+Slack Events API not configured → added message.channels bot event → saved changes.
+
+/takeover intercepted by Slack as slash command → changed to takeover without slash.
+
+Takeover payload built but never sent → send function was only in else branch → moved outside so both takeover and whisper fire.
+
+Transfer destination type:number failing – same Vobiz SIP issue as outbound → changed to SIP URI format.
+
+fallback_number not in businesses.json → added → takeover SIP URI built correctly.
+
+fallback_number=normalized used 10-digit number without country code → changed to biz_data.get with +91 fallback.
+
+Real-time transcript not streaming – VAPI event not firing → fixed by enabling transcript in Server Messages.
+
+Double Slack thread bug – background_slack_init fired twice → added guard in _handle_assistant_request.
+
+End-of-call summary – _handle_end_of_call_report originally just printed “Call ended” → built Groq summarization and posted to Slack thread.
+
+PHASE 16 – Manager Setup & Onboarding Issues (Week 25)
+Problems on manager’s machine:
+
+.venv “Permission denied” → fix: rm -rf .venv; uv sync.
+
+Slack OAuth bypass using raw link instead of onboarding page → “No state found” error.
+
+Missing index.html → FileNotFoundError in onboarding.py.
+
+Relative path open("index.html") broke because working directory differed.
+
+Fix: Changed to pathlib.Path(__file__).resolve().parent.parent.parent / "index.html".,outbound flow:sarvesh@DESKTOP-SARV:~/internship/superowl_prototype$ tree
+.
+├── README.md
+├── agent
+│   ├── __pycache__
+│   │   └── chat_agent.cpython-312.pyc
+│   ├── chat_agent.py
+│   └── voice_agent.py
+├── backend
+│   ├── __pycache__
+│   │   └── main.cpython-312.pyc
+│   └── main.py
+├── frontend
+│   └── app.py
+├── kb
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── embeddings.cpython-312.pyc
+│   │   ├── nango.cpython-312.pyc
+│   │   └── notion_sync.cpython-312.pyc
+│   ├── embeddings.py
+│   ├── nango.py
+│   └── notion_sync.py
+├── project_dump.txt
+├── pyproject.toml
+├── superowl_handover.zip
+├── uv.lock
+├── vapi_export
+│   ├── assistants.json
+│   ├── id_reference.json
+│   ├── id_reference_new_account.json
+│   ├── phone_numbers.json
+│   └── tools.json
+└── vapi_migrate.py
+
+9 directories, 25 files
+sarvesh@DESKTOP-SARV:~/internship/superowl_prototype$ cat project_dump.txt
+===== README.md =====
+# SuperOwl Voice AI — Prototype
+
+Internship project. A standalone voice AI prototype for SuperOwl clients, built on top of VAPI. Tested with **Troy Blocks** (educational wooden toy company, Bengaluru).
+
+---
+
+## What It Does
+
+When a customer requests a callback on the chat widget, the system:
+
+1. Collects their name, phone, and chat summary
+2. Calls the customer via an AI voice agent (Ananya)
+3. Ananya continues the conversation, answers product/pricing questions using a RAG knowledge base
+4. When the customer shows buying intent, Ananya silently notifies the backend
+5. Backend calls the business owner via a second AI agent (Owner PA)
+6. Owner PA briefs the owner and asks if they're available
+7. If yes — the customer call is transferred to the owner's phone in real time
+8. If no — Ananya politely wraps up the call
+
+---
+
+Two VAPI assistants, both with prompts injected at call time (nothing hardcoded in dashboard):
+- **Ananya** — customer-facing, warm and conversational, uses RAG for product knowledge
+- **Owner PA** — owner-facing, concise and professional, just briefs and gets a yes/no
+
+Transfer is done via a direct POST to VAPI's `monitor.controlUrl` — not via a tool call, which was unreliable.
+
+---
+
+## Stack
+
+| Layer | Tech |
+|-------|------|
+| Backend | FastAPI (Python) |
+| Voice | VAPI (outbound calls, dual-agent) |
+| LLM | GPT-4o Mini |
+| RAG | Pinecone + Groq |
+| Knowledge Base | Notion (synced via notion_sync.py) |
+| Frontend | Streamlit |
+| Tunneling | ngrok (fixed free URL) |
+
+---
+
+## Project Structure
+
+```
+superowl_prototype/
+├── .env
+├── backend/
+│   └── main.py          # all voice logic — endpoints, VAPI webhook handler, tenant config
+├── frontend/
+│   └── app.py           # Streamlit chat widget + callback form
+├── agent/
+│   ├── chat_agent.py    # RAG chatbot (Groq + Pinecone)
+│   └── voice_agent.py   # (empty)
+├── kb/
+│   ├── embeddings.py      # Pinecone upsert
+│   └── notion_sync.py     # syncs Notion page → Pinecone
+├── vapi_migrate.py        # export/import VAPI config across accounts
+└── pyproject.toml
+```
+
+---
+
+## Setup
+
+```bash
+# Install deps
+uv sync
+
+```
+
+
+---
+
+## Running
+
+```bash
+# Terminal 1 — backend
+uv run uvicorn backend.main:app --reload --port 8000
+
+# Terminal 2 — tunnel
+ngrok http 8000
+
+# Terminal 3 — frontend
+uv run streamlit run frontend/app.py
+```
+- click the local url
+Open the local Streamlit URL printed in Terminal 3.
+ngrok URL (fixed free account): https://unpractical-shondra-undeflected.ngrok-free.dev.
+
+One-time KB sync (run whenever Notion page is updated):
+```bash
+uv run python -m kb.notion_sync
+```
+
+ngrok URL (fixed): `https://unpractical-shondra-undeflected.ngrok-free.dev`
+
+---
+## Switching VAPI Accounts ##
+
+# Manual steps on new account (3 things only): #
+
+- Sign up at vapi.ai → copy API key
+- Add Twilio credentials in VAPI dashboard (Phone Numbers → Import Twilio)
+- Import or buy a phone number
+
+```bash
+
+# Export from current account
+uv run python vapi_migrate.py export
+
+# Import to manager account
+uv run python vapi_migrate.py import --key <new_vapi_api_key> --ngrok <ngrok_url>
+```
+
+The script auto-updates `.env` with new IDs.
+
+- Set `OWNER_PHONE` to the manager's number.
+- Set SIP transfer destination in `.env` (required for live transfer):
+  - Preferred: `TRANSFER_SIP_URI=sip:<owner_phone>@<manager_sip_domain>`
+  - Alternate: set `OWNER_PHONE` + `TRANSFER_SIP_DOMAIN` and backend will build the URI.
+- If manager account has multiple VAPI phone numbers, confirm `VAPI_PHONE_NUMBER_ID` is the intended caller ID.
+
+
+## Manager Handover (Zip + Setup)
+
+Use this when sharing the project with a manager who wants to run it in their own VAPI account.
+
+### What to include in the zip
+
+- `README.md`
+- `pyproject.toml`
+- `backend/main.py`
+- `frontend/app.py`
+- `agent/chat_agent.py`
+- `agent/voice_agent.py`
+- `kb/embeddings.py`
+- `kb/nango.py`
+- `kb/notion_sync.py`
+- `kb/__init__.py`
+- `vapi_migrate.py`
+- `vapi_export/tools.json`
+- `vapi_export/assistants.json`
+- `vapi_export/phone_numbers.json`
+- `vapi_export/id_reference.json`
+
+Optional:
+- `vapi_export/id_reference_new_account.json`
+
+### What to exclude from the zip
+
+- `.env`
+- `.venv/`
+- `__pycache__/`
+- `.git/`
+- Any local secret files
+
+### Recommended zip command
+
+```bash
+zip -r superowl_handover.zip . \
+  -x ".venv/*" \
+  -x ".env" \
+  -x "**/__pycache__/*" \
+  -x ".git/*"
+```
+
+### What manager must set in `.env`
+
+Required for call flow:
+- `VAPI_API_KEY`
+- `VAPI_ASSISTANT_ID`
+- `VAPI_OWNER_ASSISTANT_ID`
+- `VAPI_PHONE_NUMBER_ID`
+- `OWNER_PHONE`
+- `TRANSFER_SIP_URI` (recommended)
+
+Alternative transfer config (if `TRANSFER_SIP_URI` is not set):
+- `TRANSFER_SIP_DOMAIN` (used with `OWNER_PHONE`)
+
+Optional:
+- `SLACK_WEBHOOK_URL`
+
+Required for chat + knowledge base features:
+- `GROQ_API_KEY`
+- `PINECONE_API_KEY`
+- `PINECONE_INDEX_NAME`
+
+Required only if using Notion sync via Nango:
+- `NANGO_SECRET_KEY`
+- `NANGO_BASE_URL`
+- `NOTION_CONNECTION_ID`
+- `NOTION_INTEGRATION_ID`
+
+Required only if using direct Notion API sync:
+- `NOTION_TOKEN`
+- `NOTION_PAGE_ID`
+
+### Full setup for manager (own account)
+
+1. Create VAPI account and copy API key.
+2. Add Twilio credentials in VAPI.
+3. Import or buy a phone number in VAPI.
+4. Start backend tunnel and keep ngrok URL ready.
+5. Run migration:
+
+```bash
+uv run python vapi_migrate.py import --key <new_vapi_api_key> --ngrok <new_ngrok_url>
+```
+
+1. Verify `.env` values:
+   - `VAPI_ASSISTANT_ID`
+   - `VAPI_OWNER_ASSISTANT_ID`
+   - `VAPI_PHONE_NUMBER_ID`
+   - `OWNER_PHONE`
+   - `TRANSFER_SIP_URI` (or `TRANSFER_SIP_DOMAIN`)
+1. If multiple phone numbers exist in manager VAPI account, ensure `VAPI_PHONE_NUMBER_ID` matches the desired outbound number.
+1. Start backend + frontend and run one full test call.
+
+### Important account-specific check
+
+Call transfer depends on SIP routing. Ensure either:
+- `TRANSFER_SIP_URI` is set directly, or
+- `TRANSFER_SIP_DOMAIN` is set correctly for the manager account.
+
+Without this, owner handoff will fail even if assistant/tool import succeeds.
+
+
+
+
+## Status
+
+| Task | Status |
+|------|--------|
+| Callback from chat window | ✅ Done |
+| Call business rep before transfer | ✅ Done |
+| Call transfer to owner | ✅ Done |
+| Slack transcript after call | ✅ Done |
+| Multilingual voice test | ⏳ In progress ? |
+| Voice cost optimization | ⏳ Future |
+
+===== agent/chat_agent.py =====
+from json import load
+import os
+import time
+from groq import Groq
+
+from kb.embeddings import search_chunks
+from dotenv import load_dotenv
+load_dotenv()
+
+client=Groq(api_key=os.getenv("GROQ_API_KEY"))
+system_prompt="""You are a helpful AI assistant for Troy Blocks, an educational wooden toy company based in Bengaluru.
+Answer questions based ONLY on the provided context from the knowledge base.
+If the answer is not in the context, say "I don't have that information, please contact us at 9731737460."
+Be professional, friendly, and concise.
+Do not make up information.
+If user is a preschool owner, emphasize structured curriculum and workshop model.
+If user is a parent, highlight creativity, birthday parties, and learning through play.do not be presumptous,and dont exceed more than 3 lines.
+If the conversation leans towards the purpose of knowing more,or booking,only then callback."""
+
+def chat(question:str,hist:list[dict],namespace:str="superowl-proto")->str:
+    chunks=search_chunks(query=question,namespace=namespace,top_k=3)
+    context="\n\n".join(
+    [f"[Source :{c['page_title']}]\n{c['text']}"
+    for c  in chunks]
+    )
+    messages=[
+        {
+            "role":"system",
+            "content":system_prompt
+        },
+        *hist,
+       {
+            "role": "user",
+            "content": f"""Context from knowledge base:{context} Customer question: {question}"""
+        }
+    ]
+    response=client.chat.completions.create(messages=messages,model="llama-3.1-8b-instant",temperature=0.2)
+    return response.choices[0].message.content
+
+===== agent/voice_agent.py =====
+
+
+===== backend/main.py =====
+import os
+import httpx
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+from dotenv import load_dotenv
+import json
+import asyncio
+import functools
+load_dotenv()
+
+app = FastAPI()
+
+
+def build_transfer_sip_uri() -> str | None:
+    """
+    Build transfer SIP URI from environment variables.
+
+    Priority:
+    1. TRANSFER_SIP_URI (full URI, recommended)
+    2. OWNER_PHONE + TRANSFER_SIP_DOMAIN
+    """
+    explicit_uri = os.getenv("TRANSFER_SIP_URI")
+    if explicit_uri:
+        return explicit_uri
+
+    owner_phone = os.getenv("OWNER_PHONE")
+    sip_domain = os.getenv("TRANSFER_SIP_DOMAIN")
+
+    if owner_phone and sip_domain:
+        return f"sip:{owner_phone}@{sip_domain}"
+
+    return None
+
+# ─── IN-MEMORY CALL STATE ────────────────────────────────────────────────────
+call_sessions = {}
+owner_to_customer = {}
+
+
+# ─── TENANT CONFIG ───────────────────────────────────────────────────────────
+# One tenant hardcoded for prototype.
+# Later: fetch from Firebase by business_id.
+# voice_system_prompt = exactly what owner writes in dashboard.
+
+TENANT_CONFIG = {
+    "exnnpDvj3CUqdKdZb6SBNQM9gld2": {
+        "business_name": "Troy Blocks",#add business_id for multitenant
+        "owner_name": "Troy",
+        "owner_phone": os.getenv("OWNER_PHONE"),
+        "kb_namespace": "superowl-proto",
+        "transfer_number": os.getenv("OWNER_PHONE"),
+        "transfer_sip_uri": build_transfer_sip_uri(),
+        "transfer_tool_id": "a80f50bc-9b7b-43a8-a1b2-b522f1279352",
+
+        "voice_welcome_message": (
+            "Hi {customer_name}! This is Ananya calling from Troy Blocks. "
+            "I was just chatting with you and wanted to continue our conversation. "
+            "How can I help you today?"
+        ),
+
+       "voice_system_prompt": """# 🎙️ Troy Fun Center Voice AI Agent System Prompt
+
+## Identity
+
+You are **Ananya**, a warm, friendly, and professional **voice assistant for Troy Blocks and Troy Fun Center in Indiranagar, Bengaluru**.
+
+Your role is to help customers learn about Troy activities and assist them in **booking Troy sessions or birthday party events**.
+
+Speak in a **calm, natural, conversational tone**.
+
+Keep responses **short and clear**, because this is a **voice call**.
+
+Avoid robotic language.
+
+Use natural acknowledgements like:
+
+* "Okay."
+* "Got it."
+* "Alright."
+* "That makes sense."
+
+---
+
+# Business Knowledge
+
+## Troy Activities
+
+Troy offers **creative wooden block building activities for children**.
+
+Children use **62-piece solid wooden block sets with 11 shapes**.
+
+These activities encourage:
+
+* Creativity
+* Problem solving
+* Logical thinking
+* Collaboration
+
+Age group: **3 years and above**.
+
+Blocks are **solid wood with smooth child-safe finish**.
+
+---
+
+# Types of Bookings
+
+Customers may want:
+
+### 1️⃣ Troy Play Session (At Troy Fun Center)
+
+Location: **Troy Fun Center, Indiranagar**
+
+Pricing:
+
+* **399 per child for one hour**
+* **499 per child for ninety minutes**
+
+Example explanation:
+
+"The Troy play session is three hundred ninety nine per child for one hour. If children stay for ninety minutes, it is four hundred ninety nine per child."
+
+---
+
+### 2️⃣ Birthday Party Activity
+
+Birthday activities can happen:
+
+• **At Troy Fun Center**, or
+• **At the customer's location**
+
+Ask clearly:
+
+"Would you like the celebration at Troy Fun Center or at your location?"
+
+---
+
+# Birthday Party Pricing
+
+Activity packages depend on **duration and number of kids**.
+
+Example response:
+
+"For example, a one hour activity for around ten to twelve kids starts at three thousand nine hundred ninety."
+
+Internal pricing:
+
+1 hour session
+10–12 kids — 3990
+13–15 kids — 5187
+16–20 kids — 6384
+21–25 kids — 8379
+
+1.5 hour session
+10–12 kids — 4990
+13–15 kids — 6487
+16–20 kids — 7984
+21–25 kids — 10479
+
+2 hour session
+10–12 kids — 5990
+13–15 kids — 7787
+16–20 kids — 9584
+21–25 kids — 12579
+
+2.5 hour session
+10–12 kids — 6990
+13–15 kids — 9087
+16–20 kids — 11184
+21–25 kids — 14679
+
+3 hour session
+10–12 kids — 7990
+13–15 kids — 10387
+16–20 kids — 12784
+21–25 kids — 16779
+
+When speaking about pricing:
+
+• Speak numbers naturally
+• Do not read digits individually
+• Only mention the **relevant duration and group size**
+
+---
+
+# Transport Charges
+
+Transport is calculated from **Indiranagar center**.
+
+Within 5 km — 250
+5 to 10 km — 500
+10 to 15 km — 750
+15 to 20 km — 1000
+Above 20 km — 50 per km
+
+---
+
+# Troy Fun Center Address
+
+Troy Fun Center
+Sweet Root – Toys & Memories
+No 5/1 First Floor
+80 Feet Road
+HAL 3rd Stage
+Indiranagar
+Bengaluru
+
+---
+
+# Customer Segmentation Guidance
+
+If caller is a **parent**:
+
+Highlight:
+
+* creativity
+* fun learning
+* birthday engagement
+
+If caller is a **preschool or school owner**:
+
+Highlight:
+
+* structured activity
+* creativity curriculum
+* repeat engagement workshops
+
+---
+
+# Booking Information to Collect
+
+Ask **one question at a time**.
+
+1️⃣ Event type
+"Is this for a Troy play session or a birthday party?"
+
+2️⃣ Location
+"Would the activity be at Troy Fun Center or at your location?"
+
+3️⃣ Number of kids
+"Approximately how many kids will join?"
+
+4️⃣ Date
+"When are you planning the activity?"
+
+5️⃣ Time
+"What time would you prefer to start?"
+
+6️⃣ Duration
+"Would you prefer one hour, ninety minutes, or longer?"
+
+7️⃣ Event location area (if outside event)
+
+8️⃣ Customer name
+
+---
+
+# Function Call Rules
+
+You have access to the following tools.
+
+### search_knowledge_base
+
+Use this tool **if the customer asks something not covered in the business knowledge above**.
+
+Example:
+
+* product details
+* special requests
+* unusual event types
+
+**If KB search returns no results:**
+
+Say: "Let me get our team's direct contact for that question — would a callback be helpful?"
+
+**If KB search fails or times out:**
+
+Say: "I don't have that detail on hand, but I'll make sure the team can help when we talk. Is there anything else?"
+
+Call:
+
+search_knowledge_base(query)
+
+---
+
+### notify_owner
+
+Call this tool when the customer:
+
+• clearly wants to book
+• asks to speak to the owner
+• shows strong interest
+• asks about immediate availability
+• mentions urgency
+• asks to confirm booking
+
+When calling notify_owner, pass:
+
+* customer_name
+* call_summary
+* reason_for_flagging
+
+Example summary:
+
+"Parent wants birthday party activity for around fifteen kids next Saturday evening at Whitefield."
+
+After calling notify_owner say:
+
+"Let me check availability with our team. Please hold for just a moment."
+
+Then remain silent until instruction arrives.
+
+---
+
+### transfer_call_tool
+
+If the system confirms the owner is available:
+
+Say:
+
+"Great news! The owner is available and ready to speak with you. Connecting you now, please hold."
+
+Then call:
+
+transfer_call_tool()
+
+---
+
+### end_call_tool
+
+If the owner is unavailable:
+
+Say:
+
+"Our team is a little occupied at the moment but they will call you back shortly. Thank you so much for your interest in Troy Blocks!"
+
+Then call:
+
+end_call_tool()
+
+---
+
+# Voice Behavior Rules
+
+## Speech Normalization
+
+Speak numbers naturally.
+
+Examples:
+
+399 → three hundred ninety nine
+499 → four hundred ninety nine
+3990 → three thousand nine hundred ninety
+
+Do not say:
+
+* "Rs"
+* "rupees"
+* digits individually
+
+---
+
+# Phone Number Rules
+
+Phone numbers must be spoken **digit by digit**.
+
+Example:
+
+"nine eight seven, six five four, three two one zero"
+
+Never add country code.
+
+---
+
+# Turn Discipline
+
+• Ask **one question at a time**
+• **Wait 2 seconds for response**
+• If no response after 2 seconds: **repeat the question once, softly** (e.g., "Sorry, did you have a chance to think about that?")
+• If **still no response** after second ask: **assume "no" or offer callback** ("No worries, we can call you back!")
+• If caller says "one moment", **wait silently for 5 seconds**, then gently: "Still here whenever you're ready."
+• Never ask same question 3+ times in a row
+
+---
+
+# Identity Rule
+
+If asked who you are:
+
+"I'm a virtual assistant helping coordinate Troy activity bookings."
+
+If asked if you are AI:
+
+"Yes, I'm a virtual assistant helping with booking coordination."
+
+Keep explanations short.
+
+---
+
+# Silence Handling
+
+**If customer goes silent > 3 seconds:**
+
+Say: "I'm still here. Are you there?" or "Hello?"
+
+**If silence continues > 2 more seconds:**
+
+Say: "It seems like we lost the connection. No worries — we'll call you back!"
+
+Then call end_call_tool().
+
+---
+
+# Closing
+
+When ending the conversation:
+
+"Thank you for your interest in Troy activities. Have a wonderful day.""",
+    }
+}
+
+ACTIVE_TENANT_ID = "exnnpDvj3CUqdKdZb6SBNQM9gld2"
+
+
+def get_tenant():
+    return TENANT_CONFIG[ACTIVE_TENANT_ID]
+
+
+# ─── VAPI HELPERS ────────────────────────────────────────────────────────────
+
+async def make_vapi_call(
+    assistant_id: str,
+    phone: str,
+    name: str,
+    system_prompt: str,
+    first_message: str,
+    transfer_number: str | None = None
+):
+    """
+    Fire an outbound VAPI call.
+    Injects system_prompt + first_message via assistantOverrides.
+    Optionally injects transfer destination for transfer_call_tool.
+    """
+    url = "https://api.vapi.ai/call"
+    headers = {
+        "Authorization": f"Bearer {os.getenv('VAPI_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+
+    assistant_overrides = {
+        "firstMessage": first_message,
+        "model": {
+            "provider":"openai",
+             "model": "gpt-4o-mini",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                }
+            ]
+        }
+    }
+
+    # Inject transfer destination if provided
+    if transfer_number:
+       assistant_overrides["tools:append"] = [
+        {
+            "type": "transferCall",
+            "function":{
+                "name":"transfer_call_tool",
+                "description":"Transfer the customer call to the business owner. Only call this when explicitly instructed after owner confirms availability."
+            },
+            "destinations": [
+                {
+                    "type": "sip",
+                    "sipUri": transfer_number,
+                    "description": "Transfer to business owner"
+                }
+            ]
+        }
+    ]
+
+    payload = {
+        "assistantId": assistant_id,
+        "phoneNumberId": os.getenv("VAPI_PHONE_NUMBER_ID"),
+        "customer": {
+            "number": phone,
+            "name": name
+        },
+        "assistantOverrides": assistant_overrides
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+    result = resp.json()
+    print(f"VAPI call response ({resp.status_code}): {result}")
+    return result
+
+'''
+async def send_background_message(customer_call_id: str, message: str):
+    """
+    Injects a system message into Ananya's active call mid-conversation.
+    Used to tell Ananya to transfer or wrap up after owner decision.
+    """
+    session = call_sessions.get(customer_call_id, {})
+    url = session.get("control_url")
+    if not url:
+       print(f"No control URL found for call {customer_call_id}")
+    return
+    headers = {
+        "Authorization": f"Bearer {os.getenv('VAPI_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "type": "add-message",
+        "message": {
+            "role": "system",
+            "content": message
+        }
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+    print(f"Background message response: {resp.status_code} {resp.text}")
+    return resp
+'''
+async def send_background_message(customer_call_id: str, message: str):
+    """
+    Injects a system message into Ananya's active call mid-conversation.
+    Used to tell Ananya to transfer or wrap up after owner decision.
+    """
+    session = call_sessions.get(customer_call_id, {})
+    url = session.get("control_url")
+
+    if not url:
+        print(f"No control URL found for call {customer_call_id}")
+        return # Correctly placed inside the if-block
+
+    headers = {
+        "Authorization": f"Bearer {os.getenv('VAPI_API_KEY')}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "type": "add-message",
+        "message": {
+            "role": "system",
+            "content": message
+        }
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # VAPI Control API uses POST to the monitor.controlUrl
+        resp = await client.post(url, headers=headers, json=payload)
+
+    print(f"Background message response: {resp.status_code} {resp.text}")
+    return resp
+
+
+async def command_customer_call(customer_call_id: str, decision: str):
+    tenant = get_tenant()
+
+    if decision == "yes":
+        session = call_sessions.get(customer_call_id, {})
+        control_url = session.get("control_url")
+
+        if control_url:
+            # Tell Ananya to say the handoff line
+            await send_background_message(
+                customer_call_id,
+                "The owner is available. Say exactly: 'Great news! The owner is ready to speak with you. Connecting you now, please hold.' then stop speaking."
+            )
+
+            # Small delay to let Ananya finish speaking
+            import asyncio
+            await asyncio.sleep(4)
+
+            # Execute the transfer directly from backend via controlUrl
+            headers = {
+                "Authorization": f"Bearer {os.getenv('VAPI_API_KEY')}",
+                "Content-Type": "application/json"
+            }
+            transfer_payload = {
+                "type": "transfer",
+                "destination": {
+                    "type": "sip",
+                    "sipUri": tenant["transfer_sip_uri"]
+                }
+            }
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                resp = await client.post(control_url, headers=headers, json=transfer_payload)
+            print(f"Transfer via controlUrl: {resp.status_code} {resp.text}")
+
+        else:
+            print(f"No control URL for call {customer_call_id}, cannot transfer")
+
+    elif decision == "no":
+        await send_background_message(
+            customer_call_id,
+            f"The owner is currently unavailable. "
+            f"Say 'I'm sorry, our team at {tenant['business_name']} is a little occupied "
+            f"at the moment. They will call you back shortly. Thank you so much!' then call end_call_tool."
+        )
+
+    elif decision == "voicemail":
+        await send_background_message(
+            customer_call_id,
+            f"The owner did not pick up. "
+            f"Say 'Our team seems to be unavailable right now but will call you back soon. "
+            f"Thank you for your interest in {tenant['business_name']}!' then call end_call_tool."
+        )
+
+
+
+
+# ─── ROUTES ──────────────────────────────────────────────────────────────────
+
+class CallbackRequest(BaseModel):
+    name: str
+    phone: str
+    conversation_summary: str
+
+
+@app.post("/trigger-call")
+async def trigger_call(req: CallbackRequest):
+    """
+    Called by Streamlit frontend when customer requests callback.
+    Fires Ananya call with full prompt + transfer destination injected.
+    """
+    tenant = get_tenant()
+
+    if not tenant.get("transfer_sip_uri"):
+        raise ValueError(
+            "Transfer SIP destination is not configured. Set TRANSFER_SIP_URI or both OWNER_PHONE and TRANSFER_SIP_DOMAIN in .env"
+        )
+
+    # Full system prompt = base voice prompt + chat summary appended
+    full_system_prompt = (
+        tenant["voice_system_prompt"]
+        + f"\n\n---\nChat Context (prior conversation with customer):\n{req.conversation_summary}"
+    )
+
+    # First message with customer name substituted
+    first_message = tenant["voice_welcome_message"].replace(
+        "{customer_name}", req.name
+    )
+
+    assistant_id = os.getenv("VAPI_ASSISTANT_ID")
+    if not assistant_id:
+        raise ValueError("VAPI_ASSISTANT_ID environment variable is not set")
+
+    result = await make_vapi_call(
+        assistant_id=assistant_id,
+        phone=req.phone,
+        name=req.name,
+        system_prompt=full_system_prompt,
+        first_message=first_message,
+        transfer_number=tenant["transfer_sip_uri"],
+    )
+
+    call_id = result.get("id")
+    if call_id:
+        call_sessions[call_id] = {
+            "customer_name": req.name,
+            "customer_phone": req.phone,
+            "conversation_summary": req.conversation_summary,
+            "owner_call_triggered": False,
+            "owner_call_id": None,
+            "control_url": result.get("monitor", {}).get("controlUrl"),
+        }
+        print(f"Customer call triggered: {call_id}")
+
+    return {"status": "call initiated", "call_id": call_id}
+
+
+@app.post("/notify-owner")
+async def notify_owner(request: Request):
+    """
+    Called by Ananya's notify_owner tool when she detects a high lead.
+    Receives: customer_name, call_summary, lead_reason
+    Fires Owner PA call with full context injected.
+    """
+    data = await request.json()
+    print(f"notify_owner called: {data}")
+
+    tool_call_id = data.get("message", {}).get("toolCallList", [{}])[0].get("id")
+    arguments = data.get("message", {}).get("toolCallList", [{}])[0].get("function", {}).get("arguments", {})
+    customer_name = arguments.get("customer_name", "the customer")
+    call_summary = arguments.get("call_summary", "")
+    lead_reason = arguments.get("lead_reason", "")
+    customer_call_id = data.get("message", {}).get("call", {}).get("id")
+
+    print(f"Customer: {customer_name}")
+    print(f"Summary: {call_summary}")
+    print(f"Reason: {lead_reason}")
+
+    tenant = get_tenant()
+
+    # Build Owner PA prompt with full customer context injected
+    pa_system_prompt = f"""[Identity]
+You are a professional, efficient AI assistant representing SuperOwl.
+Your role is to inform the {tenant['business_name']} owner about a qualified lead
+and get their availability decision quickly.
+
+[Style]
+- Concise, clear, and professional.
+- No small talk. Stay focused.
+- Sound human — use brief natural pauses.
+
+
+[Customer Context]
+Customer Name: {customer_name}
+What they want: {call_summary}
+Quality indicator: {lead_reason}
+
+[Task]
+1. Say: "Hello {tenant['owner_name']}, this is SuperOwl calling to inform of a lead. I have a qualified customer on the line."
+2. Brief the owner: "{customer_name} wants to {call_summary}."
+3. Ask: "Are you available to speak with them right now?"
+4. Wait for response.
+5. If YES: Say "Perfect, connecting you now." → call report_decision with decision="yes" → end call.
+6. If NO: Say "No problem, I will let them know. Thank you!" → call report_decision with decision="no" → end call.
+7. If no clear answer: ask once more. If still unclear → assume "no" → call report_decision with decision="no" → end call.
+
+[Critical Rule]
+Always call report_decision before ending.
+Decision must be "yes" or "no" only. Nothing else."""
+
+    pa_first_message = (
+        f"Hello {tenant['owner_name']}, am I speaking to the owner of {tenant['business_name']}?"
+    )
+
+    owner_assistant_id = os.getenv("VAPI_OWNER_ASSISTANT_ID")
+    if not owner_assistant_id:
+        raise ValueError("VAPI_OWNER_ASSISTANT_ID environment variable is not set")
+
+    # Fire Owner PA call
+    owner_result = await make_vapi_call(
+        assistant_id=owner_assistant_id,
+        phone=tenant["owner_phone"],
+        name=tenant["owner_name"],
+        system_prompt=pa_system_prompt,
+        first_message=pa_first_message,
+    )
+
+    owner_call_id = owner_result.get("id")
+    if owner_call_id and customer_call_id:
+        owner_to_customer[owner_call_id] = customer_call_id
+        if customer_call_id in call_sessions:
+            call_sessions[customer_call_id]["owner_call_triggered"] = True
+            call_sessions[customer_call_id]["owner_call_id"] = owner_call_id
+        print(f"Owner PA call triggered: {owner_call_id} → customer: {customer_call_id}")
+
+    return {
+        "results": [
+            {
+                "toolCallId": tool_call_id,
+                "result": "Owner has been notified. Please hold while we check availability."
+            }
+        ]
+    }
+
+
+@app.post("/owner-decision")
+async def owner_decision(request: Request):
+    """
+    Called by Owner PA's report_decision tool.
+    Receives owner's yes/no/voicemail decision.
+    Commands Ananya via background message injection.
+    """
+    data = await request.json()
+    print(f"Owner decision received: {data}")
+
+    tool_call_id = data.get("message", {}).get("toolCallList", [{}])[0].get("id")
+    arguments = data.get("message", {}).get("toolCallList", [{}])[0].get("function", {}).get("arguments", {})
+    decision = arguments.get("decision", "").lower()
+    owner_call_id = data.get("message", {}).get("call", {}).get("id")
+
+    print(f"Decision: {decision}, owner_call_id: {owner_call_id}")
+
+    customer_call_id = owner_to_customer.get(owner_call_id)
+
+    if customer_call_id:
+        print(f"Commanding customer call: {customer_call_id} with decision: {decision}")
+        await command_customer_call(customer_call_id, decision)
+    else:
+        print(f"No customer call found for owner call: {owner_call_id}")
+
+    messages = {
+        "yes": "Transfer initiated. Customer is being connected to the owner now.",
+        "no": "Noted. Customer has been informed the team will call back shortly.",
+    }
+
+    return {
+        "results": [
+            {
+                "toolCallId": tool_call_id,
+                "result": messages.get(decision, "Decision recorded.")
+            }
+        ]
+    }
+
+
+@app.post("/vapi-webhook")
+async def vapi_webhook(request: Request):
+    """
+    Receives all VAPI call events.
+    Used for logging and call state tracking only.
+    Qualification detection removed — Ananya decides via notify_owner tool.
+    """
+    data = await request.json()
+    event_type = data.get("message", {}).get("type")
+    call_id = data.get("message", {}).get("call", {}).get("id")
+
+    print(f"VAPI webhook: {event_type} | call_id: {call_id}")
+
+    if event_type == "call-ended":
+        if call_id in call_sessions:
+            print(f"Call ended. Session: {call_sessions[call_id]}")
+        elif call_id in owner_to_customer.values():
+            print(f"Owner PA call ended.")
+    #this is for the summary
+    if event_type == "end-of-call-report":
+        msg = data.get("message", {})
+        customer_name = msg.get("call", {}).get("customer", {}).get("name", "Unknown")
+        customer_phone = msg.get("call", {}).get("customer", {}).get("number", "Unknown")
+        duration_s = int(msg.get("durationSeconds", 0))
+        duration_str = f"{duration_s // 60}m {duration_s % 60}s"
+        ended_reason = msg.get("endedReason", "unknown")
+        transcript = msg.get("transcript", "No transcript available.")
+        started_at = msg.get("startedAt", "")[:16].replace("T", " ")
+        assistant_name = msg.get("assistant", {}).get("name", "")
+
+        print(f"END OF CALL REPORT: {assistant_name} | {customer_name} | {duration_str} | {ended_reason}")
+        if assistant_name == "ananya":
+            slack_url = os.getenv("SLACK_WEBHOOK_URL")
+            if slack_url:
+                slack_msg = {
+                    "text": (
+                        f"🤖 Ananya Call Report\n"
+                        f"Customer: {customer_name} ({customer_phone})\n"
+                        f"Duration: {duration_str}\n"
+                        f"Reason: {ended_reason}\n"
+                        f"Time: {started_at}\n\n"
+                        f"Transcript:\n```\n{transcript}\n```"
+                    )
+                }
+                def send_slack():
+                    import httpx
+                    r = httpx.post(slack_url, json=slack_msg, timeout=15.0,verify=False)
+                    return r.status_code, r.text
+
+                try:
+                    loop = asyncio.get_event_loop()
+                    status, text = await loop.run_in_executor(None, send_slack)
+                    print(f"Slack response: {status} {text}")
+                except Exception as e:
+                    print(f"Slack notification failed (non-fatal): {type(e).__name__}: {repr(e)}")
+    return {"status": "ok"}
+
+
+@app.post("/query-kb")
+async def query_kb(request: Request):
+    """
+    Called by Ananya's search_knowledge_base tool during voice calls.
+    Searches Pinecone and returns relevant KB chunks.
+    """
+    data = await request.json()
+
+    tool_call_id = data.get("message", {}).get("toolCallList", [{}])[0].get("id", "")
+    arguments = data.get("message", {}).get("toolCallList", [{}])[0].get("function", {}).get("arguments", {})
+    query = arguments.get("query", "")
+
+    if not query:
+        query = data.get("query", "")
+
+    print(f"KB query: {query}")
+
+    tenant = get_tenant()
+
+    from kb.embeddings import search_chunks
+    chunks = search_chunks(query=query, namespace=tenant["kb_namespace"], top_k=3)
+    context = "\n".join([c["text"] for c in chunks])
+
+    print(f"KB result preview: {context[:200]}")
+
+    if tool_call_id:
+        return {
+            "results": [
+                {
+                    "toolCallId": tool_call_id,
+                    "result": context
+                }
+            ]
+        }
+
+    return {"result": context}
+
+===== frontend/app.py =====
+import streamlit as st
+import sys
+import os
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from agent.chat_agent import chat
+
+st.set_page_config(
+    page_title="Troy Blocks Assistant",
+    page_icon="🪵",
+    layout="centered"
+)
+
+st.title("🪵 Troy Blocks AI Assistant")
+st.caption("Ask me anything about Troy Blocks — products, pricing, activities, and more.")
+
+if "history" not in st.session_state:
+    st.session_state.history = []
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "show_callback" not in st.session_state:
+    st.session_state.show_callback = False
+
+# display all previous messages
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.write(msg["content"])
+
+
+# show callback prompt when AI response suggests booking interest
+if st.session_state.messages:
+    last_ai_message = ""
+    for msg in reversed(st.session_state.messages):
+        if msg["role"] == "assistant":
+            last_ai_message = msg["content"].lower()
+            break
+
+    callback_triggers = [
+        "book", "booking", "callback", "call you", "speak with",
+        "contact", "team", "schedule", "arrange", "connect"
+    ]
+
+    if any(trigger in last_ai_message for trigger in callback_triggers):
+        with st.chat_message("assistant"):
+            st.write("Would you like me to arrange a callback from our team? 📞")
+            if st.button("Request a Callback"):
+                st.session_state.show_callback = True
+
+# callback form
+if st.session_state.show_callback:
+    with st.form("callback_form"):
+        st.subheader("📞 Request a Callback")
+        name = st.text_input("Your Name")
+        phone = st.text_input("Phone Number")
+        if not '+91' in phone:
+            phone='+91'+phone
+        submitted = st.form_submit_button("Submit")
+
+    if submitted:
+      if name and phone:
+        import httpx
+
+        # send to FastAPI backend which triggers VAPI call
+        try:
+            summary = "\n".join([
+    f"{'Customer' if m['role'] == 'user' else 'Assistant'}: {m['content']}"
+    for m in st.session_state.messages[-4:]
+])
+            resp = httpx.post(
+                "http://localhost:8000/trigger-call",
+                json={
+                    "name": name,
+                    "phone": phone,  # must be in format +91XXXXXXXXXX
+                    "conversation_summary": str(st.session_state.messages[-4:])
+                }
+            )
+            print("Backend response:", resp.json())
+            st.success(f"Thanks {name}! We'll call you at {phone} shortly.")
+            st.session_state.show_callback = False
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
+      else:
+        st.error("Please fill in both fields.")
+# chat input — at bottom
+question = st.chat_input("Ask a question...")
+
+if question:
+    with st.chat_message("user"):
+        st.write(question)
+
+    st.session_state.messages.append({"role": "user", "content": question})
+
+    with st.spinner("Thinking..."):
+        answer = chat(
+            question=question,
+            hist=st.session_state.history
+        )
+
+    with st.chat_message("assistant"):
+        st.write(answer)
+
+    st.session_state.messages.append({"role": "assistant", "content": answer})
+
+    st.session_state.history.append({"role": "user", "content": question})
+    st.session_state.history.append({"role": "assistant", "content": answer})
+
+
+
+===== kb/__init__.py =====
+
+
+===== kb/embeddings.py =====
+import os
+from pinecone import Pinecone
+from dotenv import load_dotenv
+
+load_dotenv()
+pc=Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+index = pc.Index(os.getenv("PINECONE_INDEX_NAME"))
+
+def store_chunks(chunks:list[dict],namespace:str='troy_shop'):
+    records=[]
+    for chunk in chunks:
+        records.append(
+            {
+                "id":chunk["id"],
+                "text":chunk["text"],
+                **chunk["metadata"]
+            }
+        )
+    index.upsert_records(namespace=namespace, records=records)
+    print(f"Stored {len(records)} chunks in namespace: {namespace}")
+
+def search_chunks(query: str, namespace: str = "troy", top_k: int = 3):
+    """
+    query = customer's question
+    top_k = how many matching chunks to return
+    Returns list of matching text chunks
+    """
+
+    # search_records sends query text to Pinecone
+    # Pinecone embeds query using same model
+    # Returns top_k closest records
+    results = index.search_records(
+        namespace=namespace,
+        query={"inputs": {"text": query}, "top_k": top_k},
+        fields=["text", "page_title"]  # which metadata fields to return
+    )
+
+    # extract just the text from results
+    chunks = []
+    for match in results["result"]["hits"]:
+        chunks.append({
+            "text": match["fields"].get("text", ""),
+            "page_title": match["fields"].get("page_title", "")
+        })
+
+    return chunks
+
+
+
+===== kb/nango.py =====
+import os
+import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
+
+def get_nango_headers() -> dict:
+    """
+    Returns headers needed for Nango proxy calls.
+    Nango uses these to inject the correct OAuth token automatically.
+    No need to fetch token manually — Nango handles it.
+    """
+    return {
+        "Authorization": f"Bearer {os.getenv('NANGO_SECRET_KEY')}",
+        "Connection-Id": os.getenv("NOTION_CONNECTION_ID"),
+        "Provider-Config-Key": os.getenv("NOTION_INTEGRATION_ID"),
+        "Content-Type": "application/json"
+    }
+
+def get_nango_proxy_url(endpoint: str) -> str:
+    """
+    Builds Nango proxy URL for any Notion API endpoint.
+    e.g. endpoint = "/v1/pages/abc123"
+    returns "https://api.nango.dev/proxy/v1/pages/abc123"
+    """
+    return f"{os.getenv('NANGO_BASE_URL')}/proxy{endpoint}"
+
+===== kb/notion_sync.py =====
+import os
+import asyncio
+from notion_client import Client
+from langchain_classic.text_splitter import RecursiveCharacterTextSplitter
+from kb.embeddings import store_chunks
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# use token directly from .env
+notion = Client(auth=os.getenv("NOTION_TOKEN"))
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=50
+)
+
+def extract_text_from_blocks(blocks: list) -> str:
+    text = ""
+    for block in blocks:
+        block_type = block["type"]
+        supported_types = [
+            "paragraph",
+            "heading_1", "heading_2", "heading_3",
+            "bulleted_list_item", "numbered_list_item"
+        ]
+        if block_type in supported_types:
+            rich_text = block[block_type]["rich_text"]
+            for text_obj in rich_text:
+                text += text_obj["plain_text"] + " "
+        text += "\n"
+    return text.strip()
+
+
+def fetch_page_text(page_id: str) -> tuple[str, str]:
+    page = notion.pages.retrieve(page_id=page_id)
+
+    title = ""
+    props = page["properties"]
+    for prop in props.values():
+        if prop["type"] == "title":
+            for text_obj in prop["title"]:
+                title += text_obj["plain_text"]
+            break
+
+    blocks_response = notion.blocks.children.list(block_id=page_id)
+    blocks = blocks_response["results"]
+    text = extract_text_from_blocks(blocks)
+    return title, text
+
+
+def sync_page_to_pinecone(page_id: str, namespace: str = "superowl-proto"):
+    print(f"Fetching page {page_id} from Notion...")
+    title, text = fetch_page_text(page_id)
+
+    if not text.strip():
+        print(f"Page {page_id} is empty, skipping.")
+        return
+
+    print(f"Page title: {title}")
+    print(f"Text length: {len(text)} chars")
+
+    text_chunks = splitter.split_text(text)
+    print(f"Split into {len(text_chunks)} chunks")
+
+    chunks = []
+    for i, chunk_text in enumerate(text_chunks):
+        chunks.append({
+            "id": f"{page_id}_chunk_{i}",
+            "text": chunk_text,
+            "metadata": {
+                "page_id": page_id,
+                "page_title": title,
+                "chunk_index": i
+            }
+        })
+
+    store_chunks(chunks, namespace=namespace)
+    print(f"Synced '{title}' → {len(chunks)} chunks stored")
+
+
+if __name__ == "__main__":
+    print("Starting sync...")
+    page_id = os.getenv("NOTION_PAGE_ID")
+    print(f"Page ID: {page_id}")
+    sync_page_to_pinecone(page_id)
+    print("Sync complete.")
+
+===== vapi_migrate.py =====
+"""
+vapi_migrate.py — SuperOwl VAPI Account Migration Tool
+=======================================================
+EXPORT: pulls all assistants, tools, phone numbers from current account
+IMPORT: recreates everything on a new account, remaps IDs, updates .env
+
+Usage:
+    Export:  uv run python vapi_migrate.py export
+    Import:  uv run python vapi_migrate.py import --key sk-... --ngrok https://your-ngrok-url.ngrok-free.app
+    Both:    uv run python vapi_migrate.py export && uv run python vapi_migrate.py import --key sk-... --ngrok https://...
+
+What you must do manually on new account:
+  1. Sign up at vapi.ai → copy API key
+  2. Add Twilio credentials in VAPI dashboard (Phone Numbers → Add Provider)
+  3. Buy or import a Twilio number
+  4. Run: python vapi_migrate.py import --key <new_api_key> --ngrok <new_ngrok_url>
+
+The script will handle everything else.
+"""
+
+import httpx
+import json
+import os
+import sys
+import argparse
+from pathlib import Path
+from dotenv import load_dotenv, set_key
+
+load_dotenv()
+
+EXPORT_DIR = Path("vapi_export")
+ENV_FILE = Path(".env")
+BASE_URL = "https://api.vapi.ai"
+
+# Fields VAPI rejects if sent on creation (read-only)
+STRIP_FIELDS = {"id", "orgId", "createdAt", "updatedAt","isServerUrlSecretSet"}
+
+
+# ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+def get_headers(api_key: str) -> dict:
+    return {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+
+def vapi_get(path: str, api_key: str) -> list | dict:
+    r = httpx.get(f"{BASE_URL}/{path}", headers=get_headers(api_key), timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+def vapi_post(path: str, payload: dict, api_key: str) -> dict:
+    r = httpx.post(f"{BASE_URL}/{path}", headers=get_headers(api_key), json=payload, timeout=30)
+    if not r.is_success:
+        print(f"  ✗ POST /{path} failed ({r.status_code}):")
+        print(f"     {r.text}")
+        return {}
+    return r.json()
+
+
+def strip(obj: dict) -> dict:
+    """Remove read-only fields from a resource before re-creating."""
+    return {k: v for k, v in obj.items() if k not in STRIP_FIELDS}
+
+
+def save_json(name: str, data):
+    EXPORT_DIR.mkdir(exist_ok=True)
+    path = EXPORT_DIR / f"{name}.json"
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+    print(f"  Saved → {path}")
+
+
+def load_json(name: str):
+    path = EXPORT_DIR / f"{name}.json"
+    if not path.exists():
+        print(f"  ✗ {path} not found — run export first")
+        sys.exit(1)
+    with open(path) as f:
+        return json.load(f)
+
+
+def tool_identity_keys(tool: dict) -> list[str]:
+    """
+    Return stable identity keys for matching tools across accounts.
+    Returns keys in priority order: most specific first.
+    """
+    keys: list[str] = []
+
+    # Most specific: function name (only function tools have this)
+    fn_name = tool.get("function", {}).get("name")
+    if fn_name:
+        keys.append(f"fn:{fn_name}")
+
+    # Webhook URLs are highly specific
+    server_url = tool.get("server", {}).get("url")
+    if server_url:
+        keys.append(f"server_url:{server_url}")
+
+    # API request tools
+    api_url = tool.get("url")
+    if api_url:
+        keys.append(f"api_url:{api_url}")
+
+    # Top-level name (fallback)
+    top_name = tool.get("name")
+    if top_name:
+        keys.append(f"name:{top_name}")
+
+    # Tool type (least specific — only as last resort)
+    tool_type = tool.get("type")
+    if tool_type:
+        keys.append(f"type:{tool_type}")
+
+    return keys
+
+
+# ─── EXPORT ──────────────────────────────────────────────────────────────────
+
+def export(api_key: str):
+    print("\n🔽 EXPORTING from current VAPI account...\n")
+
+    # Tools
+    print("📦 Tools...")
+    tools = vapi_get("tool", api_key)
+    save_json("tools", tools)
+    print(f"  {len(tools)} tool(s) exported")
+
+    # Assistants
+    print("\n🤖 Assistants...")
+    assistants = vapi_get("assistant", api_key)
+    save_json("assistants", assistants)
+    print(f"  {len(assistants)} assistant(s) exported")
+
+    # Phone numbers (metadata only — number itself tied to Twilio)
+    print("\n📞 Phone numbers...")
+    phones = vapi_get("phone-number", api_key)
+    save_json("phone_numbers", phones)
+    print(f"  {len(phones)} phone number(s) exported")
+
+    # Save ID reference map for humans to read
+    id_ref = {
+        "tools": {t.get("function", {}).get("name", t.get("name", t["id"])): t["id"] for t in tools},
+        "assistants": {a["name"]: a["id"] for a in assistants},
+        "phone_numbers": {p.get("number", p["id"]): p["id"] for p in phones},
+    }
+    save_json("id_reference", id_ref)
+
+    print("\n✅ Export complete. Files saved to ./vapi_export/")
+    print("   id_reference.json shows all resource names → IDs for reference\n")
+
+
+# ─── IMPORT ──────────────────────────────────────────────────────────────────
+
+def import_to_new_account(new_api_key: str, new_ngrok_url: str, skip_webhooks: bool = False):
+    print("\n🔼 IMPORTING to new VAPI account...\n")
+    if skip_webhooks:
+        print("⚠ Webhook validation skipped — tools will import without server URLs.\n")
+
+    # Normalise ngrok URL
+    new_ngrok_url = new_ngrok_url.rstrip("/")
+
+    id_map = {}  # old_id → new_id
+    tools_missing_webhooks = []  # Track tools that had webhooks stripped
+
+    # ── 1. Import tools ──────────────────────────────────────────────────────
+    print("📦 Importing tools...")
+    tools = load_json("tools")
+
+    # Get existing tools on new account
+    try:
+        existing_tools = vapi_get("tool", new_api_key)
+        existing_tool_index = {}
+        for t in existing_tools:
+            # Only index by MOST SPECIFIC key to prevent collisions
+            keys = tool_identity_keys(t)
+            if keys:
+                existing_tool_index.setdefault(keys[0], t["id"])
+        print(f"  Found {len(existing_tools)} tool(s) already on new account")
+    except Exception as e:
+        print(f"  ⚠ Could not fetch existing tools: {e}")
+        existing_tool_index = {}
+
+    for tool in tools:
+        old_id = tool["id"]
+        tool_name = tool.get("function", {}).get("name", tool.get("name", old_id))
+
+        # Skip if tool already exists on new account (idempotent import)
+        # Match by MOST SPECIFIC key only to avoid collisions
+        keys = tool_identity_keys(tool)
+        matched_key = None
+        existing_id = None
+        if keys and keys[0] in existing_tool_index:
+            matched_key = keys[0]
+            existing_id = existing_tool_index[matched_key]
+
+        if existing_id:
+            id_map[old_id] = existing_id
+            print(
+                f"  ↷ Tool '{tool_name}' already exists by {matched_key}: "
+                f"{existing_id[:8]}... (skipped)"
+            )
+            continue
+
+        payload = strip(tool)
+
+        # Update webhook URLs to new ngrok
+        if "server" in payload and "url" in payload["server"]:
+            if skip_webhooks:
+                # Strip server config entirely to allow tool creation without reachable webhooks
+                del payload["server"]
+                tools_missing_webhooks.append(tool_name)
+                print(f"  Webhook stripped")
+            else:
+                old_url = payload["server"]["url"]
+                # Replace just the base domain, keep the path
+                path_part = "/" + "/".join(old_url.split("/")[3:])
+                payload["server"]["url"] = new_ngrok_url + path_part
+                print(f"  Webhook updated: {path_part}")
+
+        result = vapi_post("tool", payload, new_api_key)
+        new_id = result.get("id")
+
+        if new_id:
+            id_map[old_id] = new_id
+            # Update local index to avoid duplicate creation in same import run.
+            # Only index by the MOST SPECIFIC key to prevent collisions
+            keys = tool_identity_keys(payload)
+            if keys:
+                existing_tool_index.setdefault(keys[0], new_id)
+            print(f"  ✓ Tool '{tool_name}': {old_id[:8]}... → {new_id[:8]}...")
+        else:
+            print(f"  ✗ Tool '{tool_name}' failed to import")
+
+    # ── 2. Import assistants ─────────────────────────────────────────────────
+    print("\n🤖 Importing assistants...")
+    assistants = load_json("assistants")
+
+    # Get existing assistants on new account
+    try:
+        existing_assistants = vapi_get("assistant", new_api_key)
+        existing_asst_names = {a["name"]: a["id"] for a in existing_assistants}
+        print(f"  Found {len(existing_asst_names)} assistant(s) already on new account")
+    except Exception as e:
+        print(f"  ⚠ Could not fetch existing assistants: {e}")
+        existing_asst_names = {}
+
+    for asst in assistants:
+        old_id = asst["id"]
+
+        # Skip if assistant already exists on new account
+        if asst["name"] in existing_asst_names:
+            existing_id = existing_asst_names[asst["name"]]
+            id_map[old_id] = existing_id
+            print(f"  ↷ Assistant '{asst['name']}' already exists: {existing_id[:8]}... (skipped)")
+            continue
+
+        payload = strip(asst)
+
+        # Remap toolIds in model
+        if "model" in payload and "toolIds" in payload["model"]:
+            old_ids = payload["model"]["toolIds"]
+            new_ids = [id_map.get(tid, tid) for tid in old_ids]
+
+            # Validate all toolIds were remapped
+            for old_tid, new_tid in zip(old_ids, new_ids):
+                if old_tid not in id_map:
+                    print(f"  ✗ Assistant '{asst['name']}' references missing tool {old_tid[:8]}...")
+                    continue
+
+            payload["model"]["toolIds"] = new_ids
+            print(f"  Remapped {len(old_ids)} toolId(s) for '{asst['name']}'")
+
+        # Update server webhook URL if present
+        if "server" in payload and "url" in payload["server"]:
+            old_url = payload["server"]["url"]
+            path_part = "/" + "/".join(old_url.split("/")[3:])
+            payload["server"]["url"] = new_ngrok_url + path_part
+
+        result = vapi_post("assistant", payload, new_api_key)
+        new_id = result.get("id")
+
+        if new_id:
+            id_map[old_id] = new_id
+            print(f"  ✓ Assistant '{asst['name']}': {old_id[:8]}... → {new_id[:8]}...")
+        else:
+            print(f"  ✗ Assistant '{asst['name']}' failed to import")
+
+    # ── 3. Phone number — list what's on new account ─────────────────────────
+    print("\n📞 Phone numbers...")
+    print("  ⚠ Phone numbers cannot be auto-created (tied to Twilio credentials).")
+    print("  Checking what's already on the new account...")
+
+    try:
+        new_phones = vapi_get("phone-number", new_api_key)
+        if new_phones:
+            for p in new_phones:
+                print(f"  Found: {p.get('number')} → ID: {p['id']}")
+            new_phone_id = new_phones[0]["id"]
+            new_phone_number = new_phones[0].get("number", "")
+        else:
+            print("  No phone numbers found on new account.")
+            print("  → Add Twilio credentials + import number in VAPI dashboard first.")
+            new_phone_id = "REPLACE_ME"
+            new_phone_number = "REPLACE_ME"
+    except Exception as e:
+        print(f"  Could not fetch phone numbers: {e}")
+        new_phone_id = "REPLACE_ME"
+        new_phone_number = "REPLACE_ME"
+
+    # ── 4. Build new ID reference ─────────────────────────────────────────────
+    new_id_ref = {}
+    old_ref = load_json("id_reference")
+
+    for category, name_to_old_id in old_ref.items():
+        new_id_ref[category] = {}
+        for name, old_id in name_to_old_id.items():
+            new_id_ref[category][name] = id_map.get(old_id, "NOT_MAPPED")
+
+    if new_phone_id != "REPLACE_ME":
+        new_id_ref["phone_numbers"] = {new_phone_number: new_phone_id}
+
+    save_json("id_reference_new_account", new_id_ref)
+
+    # ── 5. Update .env ────────────────────────────────────────────────────────
+    print("\n📝 Updating .env...")
+
+    if not ENV_FILE.exists():
+        print("  .env not found — creating it")
+        ENV_FILE.touch()
+
+    set_key(str(ENV_FILE), "VAPI_API_KEY", new_api_key)
+    print("  ✓ VAPI_API_KEY updated")
+
+    # Find assistant IDs by name
+    old_assistants = load_json("assistants")
+    for asst in old_assistants:
+        old_id = asst["id"]
+        new_id = id_map.get(old_id)
+        if not new_id:
+            continue
+        name_lower = asst["name"].lower()
+        if "ananya" in name_lower or name_lower == "ananya":
+            set_key(str(ENV_FILE), "VAPI_ASSISTANT_ID", new_id)
+            print(f"  ✓ VAPI_ASSISTANT_ID → {new_id}")
+        elif "owner" in name_lower or "pa" in name_lower:
+            set_key(str(ENV_FILE), "VAPI_OWNER_ASSISTANT_ID", new_id)
+            print(f"  ✓ VAPI_OWNER_ASSISTANT_ID → {new_id}")
+
+    if new_phone_id != "REPLACE_ME":
+        set_key(str(ENV_FILE), "VAPI_PHONE_NUMBER_ID", new_phone_id)
+        print(f"  ✓ VAPI_PHONE_NUMBER_ID → {new_phone_id}")
+    else:
+        print("  ⚠ VAPI_PHONE_NUMBER_ID not updated — set manually after adding Twilio number")
+
+    # ── 6. Print summary ──────────────────────────────────────────────────────
+    print("\n" + "="*55)
+    print("✅ IMPORT COMPLETE")
+    print("="*55)
+    print(f"\nID map ({len(id_map)} resources migrated):")
+    for old, new in id_map.items():
+        print(f"  {old[:12]}... → {new[:12]}...")
+
+    print("\nNew .env values set automatically.")
+
+    if skip_webhooks and tools_missing_webhooks:
+        print(f"\n⚠ {len(tools_missing_webhooks)} tool(s) imported WITHOUT webhooks:")
+        for name in tools_missing_webhooks:
+            print(f"  - {name}")
+        print("\n  To add webhooks back:")
+        print("  1. Start your backend with updated ngrok URL")
+        print("  2. Edit each tool in VAPI dashboard → add server webhook URL")
+
+    if new_phone_id == "REPLACE_ME":
+        print("\n⚠ Still needed manually:")
+        print("  1. Add Twilio credentials in VAPI dashboard")
+        print("  2. Import/buy Twilio number")
+        print("  3. Set VAPI_PHONE_NUMBER_ID in .env")
+    print("\nRestart your backend and update ngrok URL — you're good to go.\n")
+
+
+# ─── CLI ─────────────────────────────────────────────────────────────────────
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="SuperOwl VAPI Migration Tool",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  Export current account:
+    uv run python vapi_migrate.py export
+
+  Import to new account:
+    uv run python vapi_migrate.py import --key sk-abc123 --ngrok https://xyz.ngrok-free.app
+
+  Full migration (export then import):
+    uv run python vapi_migrate.py export
+    uv run python vapi_migrate.py import --key sk-abc123 --ngrok https://xyz.ngrok-free.app
+        """
+    )
+    subparsers = parser.add_subparsers(dest="command")
+
+    # Export command
+    export_parser = subparsers.add_parser("export", help="Export from current account")
+    export_parser.add_argument(
+        "--key",
+        default=os.getenv("VAPI_API_KEY"),
+        help="VAPI API key (defaults to VAPI_API_KEY in .env)"
+    )
+
+    # Import command
+    import_parser = subparsers.add_parser("import", help="Import to new account")
+    import_parser.add_argument("--key", required=True, help="New account VAPI API key")
+    import_parser.add_argument("--ngrok", required=True, help="New ngrok base URL (e.g. https://xyz.ngrok-free.app)")
+    import_parser.add_argument(
+        "--skip-webhooks",
+        action="store_true",
+        help="Strip webhook/server config from tools to allow instant import (add webhooks manually later)"
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "export":
+        if not args.key:
+            print("✗ No API key found. Pass --key or set VAPI_API_KEY in .env")
+            sys.exit(1)
+        export(args.key)
+
+    elif args.command == "import":
+        import_to_new_account(args.key, args.ngrok, skip_webhooks=args.skip_webhooks)
+
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
+
+===== vapi_export/assistants.json =====
+[
+  {
+    "id": "e6f11a67-d835-4dec-92c1-b4a6462b9b72",
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e",
+    "name": "ananya",
+    "voice": {
+      "model": "eleven_turbo_v2_5",
+      "speed": 1.1,
+      "voiceId": "ftDdhfYtmfGP0tFlBYA1",
+      "provider": "11labs",
+      "stability": 0.5,
+      "similarityBoost": 0.9
+    },
+    "createdAt": "2026-03-20T11:25:59.845Z",
+    "updatedAt": "2026-03-21T05:46:19.451Z",
+    "model": {
+      "model": "gpt-4o-mini",
+      "toolIds": [
+        "ea6117de-8f8d-4bd3-9697-db8c7b82c751",
+        "7eb4b58f-586a-44d0-88d7-c36807a6f68e",
+        "c72275df-bc3b-44ba-bd17-8140cd42124d"
+      ],
+      "messages": [
+        {
+          "role": "system",
+          "content": "You are a helpful voice assistant"
+        }
+      ],
+      "provider": "openai",
+      "maxTokens": 300,
+      "temperature": 0.2
+    },
+    "firstMessage": "",
+    "voicemailMessage": "Hello, this is Riley from Wellness Partners. I'm calling about your appointment. Please call us back at your earliest convenience so we can confirm your scheduling details.",
+    "endCallFunctionEnabled": true,
+    "endCallMessage": "Perfect! Your appointment has been scheduled. You'll receive a confirmation email shortly. Have a great day!",
+    "transcriber": {
+      "model": "flux-general-en",
+      "language": "en",
+      "numerals": false,
+      "provider": "deepgram",
+      "endpointing": 300,
+      "fallbackPlan": {
+        "transcribers": [
+          {
+            "model": "flux-general-en",
+            "language": "en",
+            "provider": "deepgram"
+          }
+        ]
+      },
+      "confidenceThreshold": 0.4
+    },
+    "silenceTimeoutSeconds": 216,
+    "clientMessages": [
+      "conversation-update",
+      "function-call",
+      "hang",
+      "model-output",
+      "speech-update",
+      "status-update",
+      "transfer-update",
+      "transcript",
+      "tool-calls",
+      "user-interrupted",
+      "voice-input",
+      "workflow.node.started",
+      "assistant.started"
+    ],
+    "serverMessages": [
+      "conversation-update",
+      "end-of-call-report",
+      "function-call",
+      "hang",
+      "speech-update",
+      "status-update",
+      "tool-calls",
+      "transfer-destination-request",
+      "handoff-destination-request",
+      "user-interrupted",
+      "assistant.started"
+    ],
+    "hipaaEnabled": false,
+    "maxDurationSeconds": 351,
+    "backgroundSound": "office",
+    "analysisPlan": {
+      "summaryPlan": {
+        "enabled": false
+      },
+      "successEvaluationPlan": {
+        "enabled": false
+      }
+    },
+    "backgroundDenoisingEnabled": true,
+    "startSpeakingPlan": {
+      "waitSeconds": 0.2,
+      "transcriptionEndpointingPlan": {
+        "onPunctuationSeconds": 0.1,
+        "onNoPunctuationSeconds": 1.5,
+        "onNumberSeconds": 0.5
+      }
+    },
+    "stopSpeakingPlan": {
+      "numWords": 3
+    },
+    "server": {
+      "url": "https://unpractical-shondra-undeflected.ngrok-free.dev/vapi-webhook",
+      "timeoutSeconds": 20
+    },
+    "compliancePlan": {
+      "hipaaEnabled": false,
+      "pciEnabled": false,
+      "zdrEnabled": false
+    },
+    "keypadInputPlan": {
+      "enabled": false,
+      "timeoutSeconds": 2,
+      "delimiters": [
+        "#",
+        "*"
+      ]
+    },
+    "isServerUrlSecretSet": false
+  },
+  {
+    "id": "ddaa827e-3c5a-45e5-93da-04c1305eeefe",
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e",
+    "name": "owner's PA",
+    "voice": {
+      "model": "eleven_turbo_v2_5",
+      "voiceId": "ack0QsRaQyDLnVyMQTSd",
+      "provider": "11labs",
+      "stability": 0.5,
+      "similarityBoost": 0.75
+    },
+    "createdAt": "2026-03-20T11:25:59.392Z",
+    "updatedAt": "2026-03-20T11:25:59.392Z",
+    "model": {
+      "model": "gpt-4.1",
+      "toolIds": [
+        "3dc081a2-dbb7-45e5-a300-3cc25d8cecd0",
+        "ea6117de-8f8d-4bd3-9697-db8c7b82c751"
+      ],
+      "provider": "openai"
+    },
+    "firstMessage": "Hello",
+    "voicemailMessage": "Please call back when you're available.",
+    "endCallMessage": "Goodbye.",
+    "transcriber": {
+      "model": "flux-general-en",
+      "language": "en",
+      "provider": "deepgram"
+    },
+    "analysisPlan": {
+      "summaryPlan": {
+        "enabled": false
+      },
+      "successEvaluationPlan": {
+        "enabled": false
+      }
+    },
+    "backgroundDenoisingEnabled": true,
+    "isServerUrlSecretSet": false
+  }
+]
+
+===== vapi_export/id_reference.json =====
+{
+  "tools": {
+    "report_decision": "3dc081a2-dbb7-45e5-a300-3cc25d8cecd0",
+    "end_call_tool": "ea6117de-8f8d-4bd3-9697-db8c7b82c751",
+    "notify_owner": "7eb4b58f-586a-44d0-88d7-c36807a6f68e",
+    "transfer_call_tool": "5f3497d1-f6f4-4f9f-ae0f-c01c4fd1b43e",
+    "api_request_tool": "c72275df-bc3b-44ba-bd17-8140cd42124d"
+  },
+  "assistants": {
+    "ananya": "e6f11a67-d835-4dec-92c1-b4a6462b9b72",
+    "owner's PA": "ddaa827e-3c5a-45e5-93da-04c1305eeefe"
+  },
+  "phone_numbers": {
+    "+918040260530": "17bc2bc1-6c52-4f2a-912a-c43aee1cd3fd"
+  }
+}
+
+===== vapi_export/id_reference_new_account.json =====
+{
+  "tools": {
+    "function_tool": "NOT_MAPPED",
+    "transfer_call_tool": "aa6817f9-7322-482d-95f0-533ace07891a",
+    "notify_owner": "55187ed9-b32c-48a4-8374-d742f04d18db",
+    "api_request_tool": "09abf11c-15c5-41ee-a864-012a56727e35",
+    "end_call_tool": "5ccbf9f9-ef33-4373-8dee-74a1e2f140e3",
+    "report_decision": "62b5a36c-d563-457e-9c88-1bd3a93c1f75"
+  },
+  "assistants": {
+    "owner's PA": "6dabb4a3-155b-427e-89e8-877496c8d8e9",
+    "ananya": "2503cc58-5bba-4e5d-8492-46797218ca3d"
+  },
+  "phone_numbers": {
+    "+918040260530": "2b74ad12-443e-4770-9bc6-2a35b1aed61f"
+  }
+}
+
+===== vapi_export/phone_numbers.json =====
+[
+  {
+    "id": "a3fe3955-0b8d-496e-ae68-937d97a28fa1",
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e",
+    "number": "+918040260530",
+    "createdAt": "2026-03-25T08:38:34.499Z",
+    "updatedAt": "2026-03-25T08:38:48.611Z",
+    "name": "outbound",
+    "credentialId": "9160f90a-856f-4c84-a8ca-20f419879486",
+    "provider": "byo-phone-number",
+    "numberE164CheckEnabled": true,
+    "server": {
+      "url": "https://unpractical-shondra-undeflected.ngrok-free.dev/vapi-webhook",
+      "timeoutSeconds": 20
+    },
+    "status": "active",
+    "providerResourceId": "ac55565c-1c34-43b0-8268-f5d818e8e7a2"
+  },
+  {
+    "id": "17bc2bc1-6c52-4f2a-912a-c43aee1cd3fd",
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e",
+    "number": "+918040260530",
+    "createdAt": "2026-03-23T10:40:29.138Z",
+    "updatedAt": "2026-03-26T08:18:56.195Z",
+    "name": "inbound",
+    "credentialId": "9001f4da-7caf-4690-9eae-3d9cddb37ca0",
+    "provider": "byo-phone-number",
+    "numberE164CheckEnabled": true,
+    "server": {
+      "url": "https://unpractical-shondra-undeflected.ngrok-free.dev/vapi/server",
+      "timeoutSeconds": 20
+    },
+    "status": "active",
+    "providerResourceId": "4968ae07-0d0e-4472-a2ef-1eccbe94b1c6"
+  }
+]
+
+===== vapi_export/tools.json =====
+[
+  {
+    "id": "3dc081a2-dbb7-45e5-a300-3cc25d8cecd0",
+    "createdAt": "2026-03-20T11:25:58.931Z",
+    "updatedAt": "2026-03-20T11:25:58.931Z",
+    "type": "function",
+    "function": {
+      "name": "report_decision",
+      "description": "Call this tool when the owner gives their decision. Call with yes if they want to talk to the customer, no if they don't",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "description": "Owner's decision. Either yes or no",
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "messages": [
+      {
+        "type": "request-start",
+        "blocking": false
+      }
+    ],
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e",
+    "server": {
+      "url": "https://unpractical-shondra-undeflected.ngrok-free.dev/owner-decision",
+      "timeoutSeconds": 20
+    },
+    "async": false,
+    "variableExtractionPlan": {
+      "schema": {
+        "type": "object",
+        "required": [],
+        "properties": {}
+      }
+    }
+  },
+  {
+    "id": "ea6117de-8f8d-4bd3-9697-db8c7b82c751",
+    "createdAt": "2026-03-20T11:25:58.627Z",
+    "updatedAt": "2026-03-20T11:25:58.627Z",
+    "type": "endCall",
+    "function": {
+      "name": "end_call_tool",
+      "description": "ending the call",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "messages": [
+      {
+        "type": "request-start",
+        "blocking": true
+      },
+      {
+        "role": "assistant",
+        "type": "request-complete",
+        "content": "thank you for your time ,sir.",
+        "endCallAfterSpokenEnabled": true
+      }
+    ],
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e"
+  },
+  {
+    "id": "7eb4b58f-586a-44d0-88d7-c36807a6f68e",
+    "createdAt": "2026-03-20T11:25:58.011Z",
+    "updatedAt": "2026-03-25T09:04:12.838Z",
+    "type": "function",
+    "function": {
+      "name": "notify_owner",
+      "description": "Call this tool when the customer shows clear buying intent \u2014 such as wanting to book, confirming interest, mentioning urgency, asking about availability, or ready to proceed. This notifies the owner and triggers a callback coordination. Pass a summary of the full conversation so far",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "lead_reason": {
+            "description": "Why this customer is flagged as a high lead \u2014 what signal triggered this\n\n",
+            "type": "string",
+            "default": ""
+          },
+          "call_summary": {
+            "description": "A concise summary of the conversation so far \u2014 what the customer wants, their requirements, any specifics mentioned",
+            "type": "string",
+            "default": ""
+          },
+          "customer_name": {
+            "description": "Full name of the customer",
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "customer_name",
+          "call_summary",
+          "lead_reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "messages": [
+      {
+        "type": "request-start",
+        "content": "Please hold on for a moment,while we connect to the owner.",
+        "blocking": false
+      },
+      {
+        "type": "request-failed",
+        "endCallAfterSpokenEnabled": false
+      }
+    ],
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e",
+    "server": {
+      "url": "https://unpractical-shondra-undeflected.ngrok-free.dev/notify-owner",
+      "timeoutSeconds": 20
+    },
+    "async": false,
+    "variableExtractionPlan": {
+      "schema": {
+        "type": "object",
+        "required": [],
+        "properties": {}
+      }
+    }
+  },
+  {
+    "id": "5f3497d1-f6f4-4f9f-ae0f-c01c4fd1b43e",
+    "createdAt": "2026-03-20T11:25:57.663Z",
+    "updatedAt": "2026-03-20T11:25:57.663Z",
+    "type": "transferCall",
+    "function": {
+      "name": "transfer_call_tool",
+      "description": "Transfer the customer call to the business owner. Only call this tool when explicitly instructed to transfer the customer \u2014 after the owner has confirmed availability."
+    },
+    "messages": [
+      {
+        "type": "request-start",
+        "content": "Connecting you with the owner now, please hold.",
+        "blocking": false
+      },
+      {
+        "type": "request-failed",
+        "content": "I'm sorry, I was unable to connect you. Our team will call you back shortly.",
+        "endCallAfterSpokenEnabled": true
+      }
+    ],
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e"
+  },
+  {
+    "id": "c72275df-bc3b-44ba-bd17-8140cd42124d",
+    "createdAt": "2026-03-17T10:26:52.484Z",
+    "updatedAt": "2026-03-17T10:42:21.574Z",
+    "type": "apiRequest",
+    "function": {
+      "name": "api_request_tool",
+      "description": "Search the knowledge base to answer questions about pricing, products, activities, durations, transport charges, and FAQs. Use this tool whenever the caller asks any questions"
+    },
+    "messages": [
+      {
+        "type": "request-start",
+        "content": "Let me check that for you.",
+        "blocking": false
+      },
+      {
+        "type": "request-failed",
+        "content": "I'm having trouble accessing our information right now",
+        "endCallAfterSpokenEnabled": false
+      }
+    ],
+    "orgId": "2aa9bc02-aa90-40bb-b088-de456522137e",
+    "name": "search_knowledge_base",
+    "url": "https://unpractical-shondra-undeflected.ngrok-free.dev/query-kb",
+    "method": "POST",
+    "body": {
+      "type": "object",
+      "required": [
+        "query"
+      ],
+      "properties": {
+        "query": {
+          "description": "",
+          "type": "string",
+          "default": "string"
+        }
+      }
+    },
+    "variableExtractionPlan": {
+      "schema": {
+        "type": "object",
+        "required": [],
+        "properties": {}
+      }
+    }
+  }
+]
+
+sarvesh@DESKTOP-SARV:~/internship/superowl_prototype$,inbound flow:arvesh@DESKTOP-SARV:~/internship/superowl_inbound_modv1$ tree
+.
+├── README.md
+├── SETUP_INSTRUCTIONS.md
+├── __pycache__
+│   └── main.cpython-312.pyc
+├── all.txt
+├── app
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   └── __init__.cpython-312.pyc
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   ├── business_registry.cpython-312.pyc
+│   │   │   ├── config.cpython-312.pyc
+│   │   │   ├── database.cpython-312.pyc
+│   │   │   └── state.cpython-312.pyc
+│   │   ├── business_registry.py
+│   │   ├── config.py
+│   │   ├── database.py
+│   │   └── state.py
+│   ├── routers
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-312.pyc
+│   │   │   ├── onboarding.cpython-312.pyc
+│   │   │   ├── slack_events.cpython-312.pyc
+│   │   │   └── vapi_webhook.cpython-312.pyc
+│   │   ├── onboarding.py
+│   │   ├── slack_events.py
+│   │   └── vapi_webhook.py
+│   └── services
+│       ├── __init__.py
+│       ├── __pycache__
+│       │   ├── __init__.cpython-312.pyc
+│       │   ├── slack_service.cpython-312.pyc
+│       │   └── vapi_handlers.cpython-312.pyc
+│       ├── slack_service.py
+│       └── vapi_handlers.py
+├── businesses.json
+├── index.html
+├── main.py
+├── project_dump.txt
+├── pyproject.toml
+└── uv.lock
+
+10 directories, 36 files
+sarvesh@DESKTOP-SARV:~/internship/superowl_inbound_modv1$ cat project_dump.txt
+===== app/core/__init__.py =====
+
+
+===== app/core/business_registry.py =====
+from pydantic import BaseModel
+from app.core.database import get_business
+
+class BusinessConfig(BaseModel):
+    display_name: str
+    first_message: str
+    system_prompt_var: dict[str, str]
+    nango_connection_id: str | None = None
+    nango_integration_id: str = "slack"
+    slack_channel_id: str | None = None
+    fallback_number: str | None = None  # <-- Added this back!
+
+FALLBACK_CONFIG = BusinessConfig(
+    display_name="SuperOwl Assistant",
+    first_message="Hello! How can I help you today?",
+    system_prompt_var={"businessName": "SuperOwl"},
+    fallback_number=None
+)
+
+def get_config_by_ani(ani: str | None) -> tuple[BusinessConfig, bool]:
+    normalized = "".join(filter(str.isdigit, ani or ""))[-10:]
+    biz_data = get_business(normalized)
+
+    if biz_data:
+        return BusinessConfig(
+            display_name=biz_data["display_name"],
+            first_message=f"Hi! This is {biz_data['display_name']}. How can I help?",
+            system_prompt_var={
+                "businessName": biz_data["display_name"],
+                "city": biz_data.get("city", "Bengaluru"),
+                "hours": biz_data.get("hours", "regular business hours"),
+                "services": biz_data.get("services", "our services")
+            },
+            nango_connection_id=biz_data.get("nango_connection_id"),
+            slack_channel_id=biz_data.get("slack_channel_id"),
+            fallback_number=biz_data.get("fallback_number", f"+91{normalized}")  # <-- Map it here so the takeover branch can read it
+        ), True
+
+    return FALLBACK_CONFIG, False
+
+===== app/core/config.py =====
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Configuration
+NANGO_SECRET_KEY = os.getenv("NANGO_SECRET_KEY")
+NANGO_BASE_URL = os.getenv("NANGO_BASE_URL", "https://api.nango.dev")
+VAPI_BASE_ASSISTANT_ID = os.getenv("VAPI_BASE_ASSISTANT_ID")
+
+===== app/core/database.py =====
+import json
+import os
+
+DB_FILE = "businesses.json"
+
+def get_business(phone: str):
+    if not os.path.exists(DB_FILE):
+        return None
+
+    try:
+        with open(DB_FILE, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return None
+            data = json.loads(content)
+            return data.get(phone)
+    except json.JSONDecodeError:
+        print(f"❌ Error reading {DB_FILE}, file may be corrupted")
+        return None
+
+def save_business(phone: str, connection_id: str, display_name: str, slack_channel_id: str):
+    data = {}
+    if os.path.exists(DB_FILE):
+        try:
+            with open(DB_FILE, "r") as f:
+                content = f.read().strip()
+                if content:
+                    data = json.loads(content)
+        except json.JSONDecodeError:
+            print(f"⚠️ Corrupted {DB_FILE}, creating new one")
+            data = {}
+
+    data[phone] = {
+        "display_name": display_name,
+        "nango_connection_id": connection_id,
+        "nango_integration_id": "slack",
+        "slack_channel_id": slack_channel_id,
+        "system_prompt": f"You are a helpful assistant for {display_name}."
+    }
+
+    with open(DB_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+
+===== app/core/state.py =====
+from typing import Any
+
+# Global call sessions dictionary
+call_sessions: dict[str, dict[str, Any]] = {}
+
+===== app/routers/__init__.py =====
+
+
+===== app/routers/onboarding.py =====
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
+import httpx
+import os
+from app.core.config import NANGO_SECRET_KEY, NANGO_BASE_URL
+from app.core.database import save_business
+
+router = APIRouter()
+
+
+@router.get("/", response_class=HTMLResponse)
+async def serve_index():
+    # Bug from Phase 15: open("index.html") breaks if cwd is wrong
+    # Fix: use absolute path
+    import pathlib
+    index_path = pathlib.Path(__file__).resolve().parent.parent.parent / "index.html"
+    with open(index_path) as f:
+        return f.read()
+
+
+@router.get("/connect/session")
+async def create_nango_session(phone: str):
+    """Step 1: Frontend calls this to get a Nango session token"""
+    connection_id = f"conn_{phone}"
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{NANGO_BASE_URL}/connect/sessions",
+            headers={
+                "Authorization": f"Bearer {NANGO_SECRET_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "end_user": {"id": connection_id},
+                "allowed_integrations": ["slack"],
+            }
+        )
+        print(f"Nango session response: {resp.status_code} — {resp.text}")
+        if resp.status_code != 200:
+            return {"error": "Could not create session"}
+        return resp.json()["data"]
+
+
+@router.get("/slack/channels")
+async def list_slack_channels(phone: str):
+    """Step 2: After OAuth, frontend calls this to show channel dropdown"""
+    # Fix: Nango proxy URL is /proxy/{method}, NOT /proxy/slack/{method}
+    url = f"{NANGO_BASE_URL}/proxy/conversations.list"
+    headers = {
+        "Authorization": f"Bearer {NANGO_SECRET_KEY}",
+        "Connection-Id": f"conn_{phone}",
+        "Provider-Config-Key": "slack"
+    }
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, headers=headers)
+        print(f"Slack channels response: {resp.status_code} — {resp.text[:200]}")
+        data = resp.json()
+        channels = data.get("channels", [])
+        # Return only public, non-archived channels for the dropdown
+        return [
+            {"name": c["name"], "id": c["id"]}
+            for c in channels
+            if not c.get("is_archived", False)
+        ]
+
+
+@router.post("/onboard/complete")
+async def complete_onboarding(data: dict):
+    """Step 3: Frontend POSTs chosen channel + business info → saved to DB"""
+    save_business(
+        phone=data["phone"],
+        connection_id=f"conn_{data['phone']}",
+        display_name=data["name"],
+        slack_channel_id=data["channel_id"]  # From dropdown selection
+    )
+    # Fix: return dict only, no tuple — FastAPI is not Flask
+    return {"status": "ok"}
+
+
+@router.post("/webhook/nango")
+async def nango_webhook(request: Request):
+    """Nango calls this when OAuth completes — optional auto-save hook"""
+    body = await request.json()
+    if body.get("type") == "auth" and body.get("success"):
+        connection_id = body.get("connectionId")
+        end_user_id = body.get("endUser", {}).get("endUserId", "")
+        phone = end_user_id.replace("conn_", "")
+        print(f"New Nango connection: {connection_id} for phone={phone}")
+        # Optional: auto-fetch and save channel here instead of waiting for frontend
+    # Fix: return dict only, no tuple
+    return {"status": "ok"}
+
+===== app/routers/slack_events.py =====
+from fastapi import APIRouter, Request
+from app.core.state import call_sessions
+import asyncio, httpx
+
+router = APIRouter()
+
+@router.post("/slack/events")
+async def slack_events(request: Request):
+    body = await request.json()
+
+    # 1. Handle Slack URL verification challenge
+    if body.get("type") == "url_verification":
+        challenge = body.get("challenge")
+        print("Slack URL Verified!!")
+        return {"challenge": challenge}
+
+    event = body.get("event", {})
+
+    # 2. Handle message events
+    event_type = event.get("type")
+    text = event.get("text", "")
+    thread_ts = event.get("thread_ts")
+    bot_id = event.get("bot_id")
+
+    # RULE: Must be a message, must be in a thread, and MUST NOT be from our own bot
+    if event_type == "message" and thread_ts and not bot_id:
+        print(f"\n🗣️ OWNER MESSAGE RECEIVED: {text}")
+
+        # 3. Find which call this thread_ts belongs to
+        target_call_id = None
+        target_control_url = None
+
+        for call_id, session_data in call_sessions.items():
+            if session_data.get("slack_thread_ts") == thread_ts:
+                target_call_id = call_id
+                target_control_url = session_data.get("control_url")
+                break
+
+        if target_call_id and target_control_url:
+            print(f"✅ Matched to Call ID: {target_call_id}")
+            print(f"🔗 Ready to inject via Control URL: {target_control_url}")
+
+            clean_text = text.lower().strip()
+
+            # --- TAKEOVER ---
+            if clean_text == "takeover" or clean_text == "!takeover":
+                fallback_number = call_sessions[target_call_id]["config"].fallback_number
+                payload = {
+                    "type": "transfer",
+                    "destination": {
+                        "type": "sip",
+                        "sipUri": f"sip:{fallback_number}@40942180.sip.vobiz.ai"
+                    }
+                }
+                print("🔀 TAKEOVER payload built")
+
+            # --- END CALL ---
+            elif clean_text in ["end", "reject", "stop", "hangup"]:
+                payload = {
+                    "type": "end-call",
+                    "message": {
+                        "role": "system",
+                        "content": (
+                            "The owner has asked to end this call. "
+                            "Say: 'I'm sorry, the owner is not available right now. Please call back later. Goodbye!' "
+                            "Then call end_call_tool immediately."
+                        )
+                    }
+                }
+                print("🗣️ WHISPER payload built")
+
+            # --- WHISPER (default) ---
+            else:
+                payload = {
+                    "type": "add-message",
+                    "message": {
+                        "role": "system",
+                        "content": f"The business owner just whispered: '{text}'. Naturally incorporate this into your next response to the customer."
+                    }
+                }
+                print("🗣️ WHISPER payload built")
+
+            # Fire the command to VAPI (works for all three cases)
+            async def send_command():
+                async with httpx.AsyncClient() as client:
+                    try:
+                        resp = await client.post(target_control_url, json=payload)
+                        print(f"🎯 Command injected! Vapi replied: {resp.status_code}")
+                    except Exception as e:
+                        print(f"❌ Failed to inject command: {e}")
+
+            asyncio.create_task(send_command())
+
+        else:
+            print("⚠️ Could not find an active call for this Slack thread.")
+
+    # Always return 200 OK so Slack doesn't retry sending the message
+    return {"status": "ok"}
+
+===== app/routers/vapi_webhook.py =====
+from fastapi import APIRouter, Request
+from app.services.vapi_handlers import EVENT_HANDLERS  # Changed
+import asyncio
+
+router = APIRouter()
+
+@router.post("/vapi/server")
+async def vapi_server(request: Request):
+    body = await request.json()
+    message = body.get("message", {})
+    msg_type = message.get("type", "")
+
+    context = {
+        "call_id": message.get("call", {}).get("id", "unknown"),
+        "customer_number": message.get("call", {}).get("customer", {}).get("number", ""),
+        "call": message.get("call", {}),
+        "message": message
+    }
+
+    handler = EVENT_HANDLERS.get(msg_type)
+    if handler:
+        response = await handler(context) if asyncio.iscoroutinefunction(handler) else handler(context)
+        return response or {}
+    return {}
+
+===== app/services/__init__.py =====
+
+
+===== app/services/slack_service.py =====
+import httpx
+from typing import Any, Optional
+from app.core.config import NANGO_SECRET_KEY, NANGO_BASE_URL  # Changed
+
+async def post_to_slack_via_nango(config: Any, text: str, thread_ts: Optional[str] = None) -> Optional[str]:
+    """Sends a message to Slack using Nango's Proxy endpoint."""
+    url = f"{NANGO_BASE_URL}/proxy/chat.postMessage"
+    headers = {
+        "Authorization": f"Bearer {NANGO_SECRET_KEY}",
+        "Connection-Id": config.nango_connection_id,
+        "Provider-Config-Key": config.nango_integration_id,
+        "Content-Type": "application/json",
+    }
+    payload = {"channel": config.slack_channel_id, "text": text}
+    if thread_ts:
+        payload["thread_ts"] = thread_ts
+
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post(url, headers=headers, json=payload)
+            print(f"Nango proxy status: {resp.status_code}")
+            print(f"Nango proxy response: {resp.text[:300]}")
+            data = resp.json()
+            if data.get("ok"):
+                return data.get("ts")
+            print(f"❌ Nango/Slack Error: {data}")
+        except Exception as e:
+            print(f"❌ Nango Proxy request failed: {e}")
+    return None
+
+===== app/services/vapi_handlers.py =====
+import asyncio
+import json
+import re
+import os
+from typing import Any, Optional
+from groq import Groq
+
+from app.core.state import call_sessions
+from app.core.config import VAPI_BASE_ASSISTANT_ID
+from app.core.business_registry import get_config_by_ani
+from app.services.slack_service import post_to_slack_via_nango
+
+groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+def _pretty_json(data: dict[str, Any]) -> str:
+    return json.dumps(data, indent=2, ensure_ascii=True)
+
+async def background_slack_init(config: Any, text: str, call_id: str):
+    """Creates the parent Slack thread and stores the TS in the session."""
+    ts = await post_to_slack_via_nango(config, text)
+    if ts and call_id in call_sessions:
+        call_sessions[call_id]["slack_thread_ts"] = ts
+        print(f"✅ Parent Slack thread created: {ts}")
+
+async def background_post_summary(session: dict, transcript_text: str):
+    """Heavy lifting: LLM summarization and Slack posting in the background."""
+    try:
+        config = session.get("config")
+
+        # Run the synchronous Groq call in a thread to prevent blocking the event loop
+        def fetch_summary():
+            return groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": "Summarize this call transcript professionally in 3-4 bullet points."},
+                    {"role": "user", "content": f"Transcript:\n{transcript_text}"}
+                ]
+            )
+
+        chat_completion = await asyncio.to_thread(fetch_summary)
+        summary_text = chat_completion.choices[0].message.content
+
+        await post_to_slack_via_nango(
+            config=config,
+            text=f"📋 *Final Call Summary:*\n{summary_text}",
+            thread_ts=session.get("slack_thread_ts")
+        )
+        print(f"✅ Summary posted for thread {session.get('slack_thread_ts')}")
+    except Exception as e:
+        print(f"❌ Error in background summary: {e}")
+
+def _append_transcript(call_id: str, role: str, text: str) -> None:
+    if call_id in call_sessions and text:
+        call_sessions[call_id]["transcript"].append({"role": role, "text": text})
+
+def _handle_assistant_started(ctx: dict[str, Any]) -> Optional[dict[str, Any]]:
+    call_id = ctx["call_id"]
+    call = ctx["call"]
+    control_url = call.get("monitor", {}).get("controlUrl")
+
+    if call_id in call_sessions:
+        call_sessions[call_id]["control_url"] = control_url
+
+    print(f"Session started for {call_id} | control_url: {control_url}")
+    return None
+
+def _handle_conversation_update(ctx: dict[str, Any]) -> Optional[dict[str, Any]]:
+    return None
+
+async def _handle_assistant_request(ctx: dict[str, Any]) -> Optional[dict[str, Any]]:
+    call = ctx["call"]
+    call_id = ctx["call_id"]
+    customer_number = ctx["customer_number"]
+
+    # GUARD: Prevent double initialization if VAPI retries the request
+    if call_id in call_sessions and call_sessions[call_id].get("slack_thread_ts"):
+        return None
+
+    # Extract Owner Number (ANI) from SIP Diversion
+    sip_headers = call.get("phoneCallProviderDetails", {}).get("sip", {}).get("headers", {})
+    diversion = sip_headers.get("Diversion", "") or call.get("sipHeaders", {}).get("Diversion", "")
+
+    match = re.search(r"sip:(\+?\d+)", diversion)
+    owner_number = match.group(1) if match else "9611896916" # Fallback for testing
+
+    # Lookup Business via Registry
+    config, matched = get_config_by_ani(owner_number)
+    print(f"📞 Call for: {config.display_name} (Connection: {config.nango_connection_id})")
+
+    # Initialize session state
+    call_sessions[call_id] = {
+        "customer_number": customer_number,
+        "slack_thread_ts": None,
+        "config": config,
+        "transcript": []
+    }
+
+    # Trigger Slack Alert in Background
+    if config.nango_connection_id and config.slack_channel_id:
+        msg = f"📞 *Incoming Call*\n*Business:* {config.display_name}\n*Customer:* {customer_number}"
+        asyncio.create_task(background_slack_init(config, msg, call_id))
+
+    # Return Assistant Config to Vapi
+    if VAPI_BASE_ASSISTANT_ID:
+        return {
+            "assistantId": VAPI_BASE_ASSISTANT_ID,
+            "assistantOverrides": {
+                "variableValues": {
+                    **config.system_prompt_var,
+                    "callerNumber": customer_number
+                },
+                "firstMessage": config.first_message,
+            }
+        }
+
+    return {
+        "assistant": {
+            "name": config.display_name,
+            "firstMessage": config.first_message,
+            "model": {
+                "provider": "openai",
+                "model": "gpt-4o-mini",
+                "messages": [{"role": "system", "content": f"Assistant for {config.display_name}"}]
+            }
+        }
+    }
+
+def _handle_status_update(ctx: dict[str, Any]) -> Optional[dict[str, Any]]:
+    print(f"Call status: {ctx['message'].get('status', '')}")
+    return None
+
+def _handle_tool_calls(ctx: dict[str, Any]) -> Optional[dict[str, Any]]:
+    message = ctx["message"]
+    tool_calls = message.get("toolCallList", [])
+    if not tool_calls:
+        tool_calls = [
+            entry.get("toolCall", {}) for entry in message.get("toolWithToolCallList", []) if entry.get("toolCall")
+        ]
+
+    results = []
+    for tool_call in tool_calls:
+        tool_name = tool_call.get("name", "")
+        results.append({
+            "name": tool_name,
+            "toolCallId": tool_call.get("id", ""),
+            "result": json.dumps({"status": "ok", "message": f"Tool {tool_name} executed"}),
+        })
+    return {"results": results}
+
+async def _handle_end_of_call_report(ctx: dict[str, Any]) -> Optional[dict[str, Any]]:
+    call_id = ctx["call_id"]
+
+    # pop to clean up memory immediately
+    session = call_sessions.pop(call_id, {})
+
+    transcript = session.get("transcript", [])
+    config = session.get("config")
+
+    if not transcript or not config or not config.slack_channel_id:
+        print(f"Call {call_id} ended — no transcript or Slack config")
+        return None
+
+    # Format transcript for LLM
+    transcript_text = "\n".join([f"{entry['role'].capitalize()}: {entry['text']}" for entry in transcript])
+
+    # Run the summary in the background so we can return 200 to VAPI instantly
+    asyncio.create_task(background_post_summary(session, transcript_text))
+
+    return {"status": "processing_summary"}
+
+def _handle_hang(_: dict[str, Any]) -> Optional[dict[str, Any]]:
+    print("Assistant failed to respond in time/hung up.")
+    return None
+
+def _handle_speech_update(ctx: dict[str, Any]) -> Optional[dict[str, Any]]:
+    return None
+
+async def _handle_transcript(ctx: dict[str, Any]) -> Optional[dict[str, Any]]:
+    message = ctx["message"]
+    call_id = ctx["call_id"]
+    role = message.get("role", "assistant")
+
+    # VAPI sometimes sends transcript text in different fields based on the event
+    text = message.get("transcript") or message.get("text") or ""
+
+    # Send only final transcript segments to Slack thread AND save to memory
+    if message.get("transcriptType") == "final" and call_id in call_sessions:
+        session = call_sessions[call_id]
+
+        if text:
+            # FIX: This is now safely inside the "final" check!
+            _append_transcript(call_id, role, text)
+
+            if session.get("slack_thread_ts"):
+                icon = "🤖" if role == "assistant" else "👤"
+                asyncio.create_task(post_to_slack_via_nango(
+                    config=session["config"],
+                    text=f"{icon} *{role.capitalize()}:* {text}",
+                    thread_ts=session["slack_thread_ts"]
+                ))
+
+    return None
+
+# Event handlers dictionary
+EVENT_HANDLERS: dict[str, Any] = {
+    "assistant.started": _handle_assistant_started,
+    "conversation-update": _handle_conversation_update,
+    "assistant-request": _handle_assistant_request,
+    "status-update": _handle_status_update,
+    "tool-calls": _handle_tool_calls,
+    "end-of-call-report": _handle_end_of_call_report,
+    "hang": _handle_hang,
+    "speech-update": _handle_speech_update,
+    "transcript": _handle_transcript,
+    'transcript[transcriptType="final"]': _handle_transcript,
+}
+
+===== businesses.json =====
+{
+    "9611896916": {
+        "display_name": "Troy Blocks",
+        "nango_connection_id": "f6a2af96-ff9f-479b-8551-6715e044c3cf",
+        "nango_integration_id": "slack",
+        "slack_channel_id": "C0AKXTU3HM1",
+        "city": "Indiranagar, Bengaluru",
+        "hours": "10 AM to 6 PM, Tuesday to Sunday",
+        "services": "activity sessions, birthday parties, wooden block workshops, robotics. Only when asked, speak more about robotics.",
+        "fallback_number": "+919611896916"
+    }
+}
+
+===== index.html =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuperOwl - Connect Slack</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: none;
+            color: blue;
+            margin-top: 10px;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>SuperOwl Inbound Call Screening</h1>
+    <h2>Connect Slack Workspace</h2>
+
+    <form id="slackForm">
+        <label for="phone">Phone Number (10 digits):</label>
+        <input type="text" id="phone" placeholder="9611896916" required>
+
+        <label for="name">Business Name:</label>
+        <input type="text" id="name" placeholder="Troy Blocks" required>
+
+        <button type="submit">Connect Slack</button>
+    </form>
+
+    <div id="loading" class="loading">Creating session...</div>
+    <div id="result" class="error"></div>
+
+    <script>
+        document.getElementById('slackForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const phone = document.getElementById('phone').value.trim();
+            const name = document.getElementById('name').value.trim();
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            const submitBtn = document.querySelector('button[type="submit"]');
+
+            resultDiv.textContent = '';
+
+            if (!phone || !name) {
+                resultDiv.textContent = 'Please enter both phone number and business name.';
+                return;
+            }
+
+            loadingDiv.style.display = 'block';
+            submitBtn.disabled = true;
+
+            try {
+                const resp = await fetch(`/connect/session?phone=${encodeURIComponent(phone)}`);
+                const data = await resp.json();
+
+                const connectLink = data?.data?.connect_link || data?.connect_link;
+
+                if (connectLink) {
+                    window.location.href = connectLink;
+                } else {
+                    resultDiv.textContent = 'Error: Could not get connect link from backend.';
+                    console.error('Unexpected response:', data);
+                }
+            } catch (err) {
+                resultDiv.textContent = 'Error: ' + err.message;
+            } finally {
+                loadingDiv.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+
+===== main.py =====
+from fastapi import FastAPI
+from app.routers import slack_events, vapi_webhook, onboarding
+
+app = FastAPI()
+
+# Include routers
+app.include_router(vapi_webhook.router)
+app.include_router(onboarding.router)
+app.include_router(slack_events.router)
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+sarvesh@DESKTOP-SARV:~/internship/superowl_inbound_modv1$,
+
+
+
+Current stage:
+PHASE 17 – Final POC Requirements (April 9-10, 2026)
+Manager’s new tasks (WhatsApp):
+
+Multitenant architecture – single codebase for multiple businesses.
+
+Split prompts: generic (tone/behavior) + business-specific (context).
+
+Fix outbound Slack/Nango (replace direct httpx with Nango proxy).
+
+Add Slack Block Kit interactive buttons (whisper, takeover, callback, resolve).
+
+Build business registry API (CRUD).
+
+Connect HTML dashboard to live backend.
+
+Fix index.html relative path bug.
+
+You defined final POC structure:
+superowl_poc/ with app/core/, app/routers/, app/services/, frontend/, REST API contract, businesses.json multitenant schema, and build order.
+
+CURRENT STATE (April 10, 2026)
+What works end-to-end:
+Outbound: Ananya calls customer → PA calls owner → owner says yes → controlUrl transfer fires → Slack notification posts. Indian numbers via Vobiz SIP.
+
+Inbound: Vobiz → VAPI → business lookup → Seema answers → Slack thread created → live transcript streams → owner whispers inject into agent → owner types takeover → call transfers to owner’s phone.
+
+What’s left for final POC:
+Unify inbound & outbound into single superowl_poc/ project.
+
+Implement multitenant prompts (generic + per-business).
+
+Replace outbound direct Slack calls with Nango proxy.
+
+Build Slack Block Kit buttons (live call: Whisper, Take Over, Transfer, End; post-call: Full Transcript, Call Back, Mark Resolved).
+
+Wire HTML dashboard to real backend endpoints (/businesses, /trigger-call, /slack/action, etc.).
+
+Package with .env.example, README.md, and demo script.
+
