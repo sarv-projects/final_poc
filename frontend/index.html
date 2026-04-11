@@ -566,6 +566,16 @@
         .top-page { display: none; }
         .top-page.active { display: block; }
 
+        /* Playground Mode Toggle */
+        .pg-mode-pill {
+            display: flex; gap: 0; background: white; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 3px; margin-bottom: 16px; width: fit-content; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .pgm {
+            padding: 6px 18px; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; color: #64748b; transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+        }
+        .pgm:hover { background: #f1f5f9; }
+        .pgm.active { background: white; color: #1e293b; box-shadow: 0 1px 5px rgba(30,32,60,0.10); }
+
         /* Chat Widget */
         .pg-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
         .chat-sim { background: white; border: 1px solid #e2e8f0; border-radius: 16px; display: flex; flex-direction: column; height: 560px; box-shadow: 0 4px 12px rgba(0,0,0,0.04); overflow: hidden; }
@@ -599,13 +609,62 @@
         .call-now-btn:hover { background: #1a9e63; }
 
         /* Live Call Panel */
-        .call-wrap { background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04); display: none; }
-        .call-head { padding: 16px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 10px; background: #f8fafc; }
-        .c-dot { width: 10px; height: 10px; border-radius: 50%; background: #94a3b8; flex-shrink: 0; }
+        .call-wrap { background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .call-head { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 9px; background: #f8fafc; }
+        .c-dot { width: 9px; height: 9px; border-radius: 50%; background: #94a3b8; transition: background 0.3s; flex-shrink: 0; }
         .c-dot.live { background: #22c27a; animation: livePulse 1.5s infinite; }
-        @keyframes livePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,194,122,0.4); } 50% { box-shadow: 0 0 0 6px rgba(34,194,122,0); } }
-        .c-lbl { font-size: 14px; font-weight: 600; color: #1e293b; flex: 1; }
-        .c-timer { font-family: monospace; font-size: 14px; color: #64748b; font-weight: 500; }
+        @keyframes livePulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,194,122,0.45); } 50% { box-shadow: 0 0 0 6px rgba(34,194,122,0); } }
+        .c-lbl { font-size: 13px; font-weight: 700; flex: 1; color: #1e293b; }
+        .c-timer { font-family: 'DM Mono', monospace; font-size: 12.5px; color: #64748b; }
+        
+        .wave-bars { display: flex; align-items: center; gap: 3px; height: 20px; margin-left: 8px; }
+        .wave-bar { width: 3px; background: #22c27a; border-radius: 2px; animation: waveB 1.1s ease-in-out infinite; }
+        .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.15s; }
+        .wave-bar:nth-child(5) { animation-delay: 0s; }
+        @keyframes waveB { 0%, 100% { height: 6px; opacity: 0.6; } 50% { height: 16px; opacity: 1; } }
+        
+        .call-type-badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+        .badge-out { background: #f0f0ff; color: #5b5ef4; }
+        .badge-in { background: #e6faf2; color: #22c27a; }
+        
+        .tr-area { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-height: 80px; max-height: 170px; overflow-y: auto; background: #f8fafc; }
+        .tr-msg { display: flex; gap: 8px; align-items: flex-start; }
+        .tr-av { width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+        .tr-av.ai { background: #5b5ef4; color: white; }
+        .tr-av.cu { background: #e9e9f0; color: #475569; }
+        .tr-av.ow { background: #22c27a; color: white; }
+        .tr-bub { max-width: 84%; padding: 7px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.5; }
+        .ai .tr-bub { background: #f0f0ff; color: #1e293b; border-top-left-radius: 3px; border: 1px solid #e0e0fa; }
+        .cu .tr-bub { background: #e9e9f0; color: #1e293b; border-top-right-radius: 3px; }
+        .ow .tr-bub { background: #e6faf2; color: #166534; border-top-left-radius: 3px; border: 1px solid #a7f3d0; }
+        .tr-lbl { font-size: 10.5px; color: #94a3b8; margin-top: 3px; }
+        
+        .whisper-msg { background: #fffbeb; border: 1px solid #fde68a; border-radius: 9px; padding: 8px 12px; font-size: 12px; color: #92400e; display: flex; align-items: flex-start; gap: 8px; margin: 4px 14px; }
+        .whisper-msg strong { color: #78350f; }
+        
+        .cta-btn { height: 36px; border-radius: 8px; border: none; display: flex; align-items: center; justify-content: center; gap: 5px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 12px; transition: transform 0.14s, background 0.14s; }
+        .cta-btn.end { background: #ef4444; color: white; box-shadow: 0 2px 8px rgba(239,68,68,0.3); }
+        .cta-btn.neu { background: #f1f5f9; border: 1.5px solid #e2e8f0; color: #64748b; }
+        .cta-btn.transfer { background: #fff4ed; border: 1.5px solid #f97316; color: #f97316; }
+        .cta-btn.whisper { background: #fffbeb; border: 1.5px solid #f59e0b; color: #92400e; }
+        .cta-btn:hover:not(:disabled) { transform: translateY(-1px); }
+        .cta-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        
+        .handover-confirm { background: #fff7ed; border: 1.5px solid #f97316; border-radius: 10px; padding: 12px 14px; margin: 10px 14px; display: none; }
+        .handover-confirm.show { display: block; }
+        .handover-confirm p { font-size: 12.5px; color: #7c2d12; margin-bottom: 10px; line-height: 1.5; }
+        .handover-confirm .hc-btns { display: flex; gap: 8px; }
+        .hc-btn { padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+        .hc-btn.yes { background: #22c27a; color: white; }
+        .hc-btn.no { background: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0; }
+        .hc-btn.yes:hover { background: #16a34a; }
+        .hc-btn.no:hover { background: #e2e8f0; }
+        
+        .call-num-row { padding: 10px 15px; border-bottom: 1px solid #e2e8f0; font-size: 12.5px; display: flex; align-items: center; gap: 8px; background: white; }
+        .call-num-row span { font-family: 'DM Mono', monospace; color: #1e293b; }
+        
         .call-info-bar { padding: 10px 16px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #64748b; background: #f8fafc; display: flex; align-items: center; gap: 8px; }
         .call-status-badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; background: #f0f0ff; color: #5b5ef4; }
         .call-actions { padding: 16px; display: flex; align-items: center; justify-content: center; gap: 12px; background: white; border-top: 1px solid #e2e8f0; }
@@ -947,78 +1006,161 @@ Always confirm the caller's name and callback number before ending.</textarea>
 
         <!-- PLAYGROUND PAGE -->
         <div id="page-playground" class="top-page">
-            <div class="pg-notice">
-                <span class="icon">📤</span>
-                <div>
-                    <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 4px; color: #166534;">Outbound Callback Mode</h3>
-                    <p>Chat with Roo below. If you ask for a callback or use trigger words like "book" or "contact", she will prompt for your details and initiate a live AI call to your phone.</p>
-                </div>
+            <!-- Mode Toggle -->
+            <div class="pg-mode-pill">
+                <div class="pgm active" id="pgm-out" onclick="switchPlayMode('outbound')">📤 Outbound (Callback test)</div>
+                <div class="pgm" id="pgm-in" onclick="switchPlayMode('inbound')">📥 Inbound (Simulate call forward)</div>
             </div>
 
-            <div class="pg-grid">
-                <!-- Chat Simulator -->
-                <div class="chat-sim">
-                    <div class="chat-header">
-                        <div class="online-dot"></div>
-                        <div>
-                            <div class="chat-title">Sweet Root – Toys & Memories</div>
-                            <div class="chat-sub">Powered by Roo · Outbound test</div>
-                        </div>
-                        <button onclick="resetChat()" class="btn btn-secondary btn-sm" style="margin-left: auto;">↺ Reset</button>
-                    </div>
-                    
-                    <div class="chat-messages" id="chat-messages">
-                        <div class="chat-msg ai">
-                            <div class="c-av ai">R</div>
+            <!-- OUTBOUND MODE -->
+            <div id="pg-outbound">
+                <div class="caller-notice" style="display: flex; align-items: center; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 9px; padding: 10px 16px; margin-bottom: 14px; font-size: 13px; color: #475569;">
+                    <span>📤</span>
+                    <span><strong>Outbound mode:</strong> Chat with Roo below. Enter your details to receive a live AI callback — exactly as your customers experience it.</span>
+                </div>
+                <div class="pg-grid">
+                    <!-- Chat Simulator -->
+                    <div class="chat-sim">
+                        <div class="chat-header">
+                            <div class="online-dot"></div>
                             <div>
-                                <div class="c-bub">Hi! I'm Roo 🦉, your assistant for Sweet Root. How can I help you today?</div>
-                                <div class="c-time">Roo · just now</div>
+                                <div class="chat-title">Sweet Root – Toys & Memories</div>
+                                <div class="chat-sub">Powered by Roo · Outbound test</div>
+                            </div>
+                            <button onclick="resetChat()" class="btn btn-secondary btn-sm" style="margin-left: auto;">↺ Reset</button>
+                        </div>
+                        
+                        <div class="chat-messages" id="chat-messages">
+                            <div class="chat-msg ai">
+                                <div class="c-av ai">R</div>
+                                <div>
+                                    <div class="c-bub">Hi! I'm Roo 🦉, your assistant for Sweet Root. How can I help you today?</div>
+                                    <div class="c-time">Roo · just now</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="collect-panel" id="collect-panel" style="display: none;">
+                            <div class="collect-label">📞 Enter your details for the AI callback</div>
+                            <div class="collect-fields">
+                                <input type="text" id="pg-name" placeholder="Your name">
+                                <input type="tel" id="pg-phone" placeholder="+91 9XXXXXXXXX">
+                            </div>
+                            <button class="call-now-btn" onclick="triggerOutboundCall()" id="call-now-btn">📞 Call me now</button>
+                        </div>
+
+                        <div class="chat-input-row" id="chat-input-row">
+                            <input type="text" id="chat-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendChat()">
+                            <button class="send-btn" onclick="sendChat()">➤</button>
+                        </div>
+                    </div>
+
+                    <!-- Right Side: Voice + Live Call Panel -->
+                    <div>
+                        <div class="card" style="margin-bottom: 16px;">
+                            <h3 style="font-size: 14px; margin-bottom: 8px;">🔊 Target Voice</h3>
+                            <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">This test will use the voice you selected in Configuration.</p>
+                            <div style="padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 500;" id="pg-selected-voice">
+                                👩 Priya (Warm · Indian)
+                            </div>
+                        </div>
+
+                        <div id="call-panel" class="call-wrap">
+                            <div class="call-head">
+                                <div class="c-dot live"></div>
+                                <div class="c-lbl">Live Call</div>
+                                <span class="call-type-badge badge-out">OUTBOUND</span>
+                                <div class="wave-bars" style="margin-left: 8px;"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>
+                                <div class="c-timer" id="timer-out" style="margin-left: auto">0:00</div>
+                            </div>
+                            <div class="call-num-row"><span>📤 Calling:</span><span style="font-family:'DM Mono',monospace;font-size:12.5px;color:#1e293b" id="pg-calling-num">+91 9876543210</span></div>
+                            <div class="tr-area" id="transcript-out">
+                                <div class="tr-msg ai"><div class="tr-av ai">R</div><div><div class="tr-bub">Hi Meera! This is Roo calling from Sweet Root – Toys & Memories!</div><div class="tr-lbl">Roo · AI · 0:03</div></div></div>
+                                <div class="tr-msg cu"><div class="tr-av cu">M</div><div><div class="tr-bub">Hi! Yes, thanks for calling back.</div><div class="tr-lbl">Customer · 0:08</div></div></div>
+                            </div>
+                            <!-- Whisper message -->
+                            <div class="whisper-msg" id="whisper-out" style="display:none;margin:4px 14px">
+                                <span>🤫</span><span><strong>Whisper from Slack:</strong> Mention the Play & Learn bundle for ₹999.</span>
+                            </div>
+                            <!-- Handover confirm -->
+                            <div class="handover-confirm" id="handover-out">
+                                <p>🔔 <strong>Customer is requesting to speak with a human.</strong> Do you want to transfer this call to yourself (+91 9901540581)?</p>
+                                <div class="hc-btns"><button class="hc-btn yes" onclick="confirmTransfer('out')">✅ Yes, transfer to me</button><button class="hc-btn no" onclick="denyTransfer('out')">❌ Keep with AI</button></div>
+                            </div>
+                            <div class="call-actions">
+                                <button class="cta-btn whisper" onclick="showWhisper('out')" title="Whisper coaching">🤫 Whisper</button>
+                                <button class="cta-btn transfer" onclick="requestTransfer('out')" title="Transfer to owner">📞 Transfer</button>
+                                <button class="cta-btn end" onclick="endCall('out')" title="End call">✕ End</button>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="collect-panel" id="collect-panel" style="display: none;">
-                        <div class="collect-label">📞 Enter your details for the AI callback</div>
-                        <div class="collect-fields">
-                            <input type="text" id="pg-name" placeholder="Your name">
-                            <input type="tel" id="pg-phone" placeholder="+91 9XXXXXXXXX">
+            <!-- INBOUND MODE (placeholder - future enhancement) -->
+            <div id="pg-inbound" style="display:none">
+                <div class="caller-notice" style="background:#e6faf2;border-color:#a7f3d0;display: flex; align-items: center; gap: 10px; border-radius: 9px; padding: 10px 16px; margin-bottom: 14px; font-size: 13px; color: #166534;">
+                    <span>📥</span>
+                    <span><strong>Inbound mode:</strong> Simulate a call forwarded from a registered business number to your shared SuperOwl DID. The agent loads that business's config automatically.</span>
+                </div>
+                <div class="pg-grid">
+                    <div>
+                        <div class="card" style="margin-bottom:14px">
+                            <div class="card-title" style="font-size:14px;font-weight:700;margin-bottom:4px">🔀 Simulate Inbound Call Forward</div>
+                            <div class="card-sub" style="font-size:12.5px;color:#64748b;margin-bottom:16px">Select a registered business to simulate a customer calling that number.</div>
+                            <div class="form-row" style="margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                                <div class="form-group" style="margin-bottom:0">
+                                    <label>Forwarding Business (ANI)</label>
+                                    <select>
+                                        <option>Sweet Root T&M — +91 99015 40581</option>
+                                        <option>Sunrise Dental Clinic — +91 88123 45678</option>
+                                        <option>Coastal Kitchen — +91 97001 23456</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom:0">
+                                    <label>Simulated Customer Number</label>
+                                    <div class="input-with-icon" style="display:flex;align-items:center;border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff"><span class="prefix" style="padding:9px 12px;background:#f1f5f9;color:#64748b;font-size:13px;border-right:1.5px solid #e2e8f0">📱</span><input type="tel" value="+91 9900001234" style="border:none;box-shadow:none;border-radius:0;flex:1;padding:9px 12px;font-family:inherit;font-size:13px" /></div>
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" style="background:#22c27a;box-shadow:0 2px 8px rgba(34,194,122,.3)" onclick="triggerInboundCall()">📥 Simulate Inbound Call</button>
                         </div>
-                        <button class="call-now-btn" onclick="triggerOutboundCall()" id="call-now-btn">📞 Call me now</button>
-                    </div>
 
-                    <div class="chat-input-row" id="chat-input-row">
-                        <input type="text" id="chat-input" placeholder="Type a message…" onkeydown="if(event.key==='Enter') sendChat()">
-                        <button class="send-btn" onclick="sendChat()">➤</button>
+                        <!-- Live inbound call panel -->
+                        <div id="call-panel-in" style="display:none" class="call-wrap">
+                            <div class="call-head">
+                                <div class="c-dot live"></div>
+                                <div class="c-lbl">Inbound Call</div>
+                                <span class="call-type-badge badge-in">INBOUND</span>
+                                <div class="wave-bars" style="margin-left:8px"><div class="wave-bar" style="background:#22c27a"></div><div class="wave-bar" style="background:#22c27a"></div><div class="wave-bar" style="background:#22c27a"></div><div class="wave-bar" style="background:#22c27a"></div><div class="wave-bar" style="background:#22c27a"></div></div>
+                                <div class="c-timer" id="timer-in" style="margin-left:auto">0:00</div>
+                            </div>
+                            <div class="call-num-row">
+                                <span>📥 Customer:</span><span style="font-family:'DM Mono',monospace;font-size:12.5px;color:#1e293b">+91 9900001234</span>
+                                <span style="margin-left:10px;color:#64748b">→</span>
+                                <span style="margin-left:6px;font-size:12px;color:#22c27a;font-weight:600">Sweet Root T&M</span>
+                            </div>
+                            <div class="tr-area" id="transcript-in">
+                                <div class="tr-msg ai"><div class="tr-av ai">R</div><div><div class="tr-bub">Thank you for calling Sweet Root – Toys & Memories! I'm Roo, your AI assistant. How can I help?</div><div class="tr-lbl">Roo · AI · 0:02</div></div></div>
+                                <div class="tr-msg cu"><div class="tr-av cu">C</div><div><div class="tr-bub">Hi, I wanted to ask about the jungle puzzle set. Is it in stock?</div><div class="tr-lbl">Customer · 0:09</div></div></div>
+                                <div class="tr-msg ai"><div class="tr-av ai">R</div><div><div class="tr-bub">Yes, the Jungle Puzzle Set is in stock! It's ₹699, 12 chunky pieces, suitable for 3+. Would you like to know more?</div><div class="tr-lbl">Roo · AI · 0:14</div></div></div>
+                            </div>
+                            <div class="whisper-msg" id="whisper-in" style="margin:4px 14px">
+                                <span>🤫</span><span><strong>Whisper from owner (Slack):</strong> Also mention we have gift wrapping for ₹50 extra.</span>
+                            </div>
+                            <div class="handover-confirm" id="handover-in">
+                                <p>🔔 <strong>Customer is saying "can I speak to a human".</strong> Check with business owner before transferring?</p>
+                                <div class="hc-btns"><button class="hc-btn yes" onclick="confirmTransfer('in')">✅ Notify owner via Slack</button><button class="hc-btn no" onclick="denyTransfer('in')">❌ Keep with AI</button></div>
+                            </div>
+                            <div class="call-actions">
+                                <button class="cta-btn whisper" onclick="showWhisper('in')" title="Whisper coaching">🤫 Whisper</button>
+                                <button class="cta-btn transfer" onclick="requestTransfer('in')" title="Transfer to owner">📞 Transfer</button>
+                                <button class="cta-btn end" onclick="endCall('in')" title="End call">✕ End</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Right Side: Live Call Panel -->
-                <div>
-                    <div class="card" style="margin-bottom: 16px;">
-                        <h3 style="font-size: 14px; margin-bottom: 8px;">🔊 Target Voice</h3>
-                        <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">This test will use the voice you selected in Configuration.</p>
-                        <div style="padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 500;" id="pg-selected-voice">
-                            👩 Priya (Warm · Indian)
-                        </div>
-                    </div>
-
-                    <div id="call-panel" class="call-wrap">
-                        <div class="call-head">
-                            <div class="c-dot live"></div>
-                            <div class="c-lbl">Live Call</div>
-                            <div class="c-timer">Active</div>
-                        </div>
-                        <div class="call-info-bar">
-                            <span class="call-status-badge">OUTBOUND</span>
-                            Calling <span style="font-family: monospace; color: #1e293b;" id="pg-calling-num">...</span>
-                        </div>
-                        <div style="padding: 24px; text-align: center; color: #64748b; font-size: 14px;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">📱</div>
-                            Call initiated via VAPI.<br>Please check your phone.
-                            <div style="margin-top: 16px; font-size: 12px;">(Live transcript streaming not implemented in this POC UI)</div>
-                        </div>
-                        <div class="call-actions" style="margin-top: 20px;">
-                            <button class="cta-btn end" onclick="endTestCall()">✕ Hide Panel</button>
+            </div>
+        </div>
                         </div>
                     </div>
                 </div>
@@ -1446,6 +1588,52 @@ Always confirm the caller's name and callback number before ending.</textarea>
 
         function endTestCall() {
             document.getElementById('call-panel').style.display = 'none';
+        }
+
+        // ── Playground Mode Switching ───────────────────────────────────────────
+        function switchPlayMode(mode) {
+            document.getElementById('pgm-out').classList.toggle('active', mode === 'outbound');
+            document.getElementById('pgm-in').classList.toggle('active', mode === 'inbound');
+            document.getElementById('pg-outbound').style.display = mode === 'outbound' ? 'block' : 'none';
+            document.getElementById('pg-inbound').style.display = mode === 'inbound' ? 'block' : 'none';
+        }
+
+        // ── Live Call Control Functions (UI Demo) ───────────────────────────────
+        function showWhisper(side) {
+            const whisperEl = document.getElementById(`whisper-${side}`);
+            if (whisperEl) {
+                whisperEl.style.display = whisperEl.style.display === 'none' ? 'flex' : 'none';
+            }
+        }
+
+        function requestTransfer(side) {
+            const handoverEl = document.getElementById(`handover-${side}`);
+            if (handoverEl) {
+                handoverEl.classList.add('show');
+            }
+        }
+
+        function confirmTransfer(side) {
+            showToast(`✅ Transfer initiated for ${side}bound call`, 'success');
+            document.getElementById(`handover-${side}`).classList.remove('show');
+        }
+
+        function denyTransfer(side) {
+            document.getElementById(`handover-${side}`).classList.remove('show');
+            showToast('❌ Transfer denied - keeping with AI', 'error');
+        }
+
+        function endCall(side) {
+            const panel = document.getElementById(`call-panel${side === 'in' ? '-in' : ''}`);
+            if (panel) {
+                panel.style.display = 'none';
+            }
+            showToast('📞 Call ended', 'success');
+        }
+
+        function triggerInboundCall() {
+            showToast('📥 Inbound call simulation started', 'success');
+            document.getElementById('call-panel-in').style.display = 'block';
         }
     </script>
 </body>
