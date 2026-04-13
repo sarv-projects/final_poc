@@ -73,7 +73,8 @@ async def vapi_webhook(request: Request):
 
 async def handle_assistant_request(payload: dict) -> dict:
     """Handle VAPI assistant-request for inbound calls."""
-    call_data = payload.get("call", {})
+    message = payload.get("message", {})
+    call_data = message.get("call", payload.get("call", {}))
     phone_data = call_data.get("phoneNumber", {})
     from_number = phone_data.get("number")
     diversion = phone_data.get("diversion")
