@@ -38,7 +38,42 @@ class VAPIService:
                 headers=self.headers,
                 json=payload,
             )
-            resp.raise_for_status()
+            if resp.is_error:
+                raise RuntimeError(
+                    f"VAPI create_call failed ({resp.status_code}): {resp.text}"
+                )
+            return resp.json()
+
+    async def create_call_from_assistant_id(
+        self,
+        assistant_id: str,
+        customer_number: str,
+        customer_name: Optional[str] = None,
+        phone_number_id: Optional[str] = None,
+        assistant_overrides: Optional[dict] = None,
+    ) -> dict:
+        """Create a call using an existing VAPI assistant id."""
+        payload = {
+            "assistantId": assistant_id,
+            "phoneNumberId": phone_number_id or settings.VAPI_PHONE_NUMBER_ID,
+            "customer": {
+                "number": customer_number,
+                "name": customer_name or customer_number,
+            },
+        }
+        if assistant_overrides:
+            payload["assistantOverrides"] = assistant_overrides
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                f"{self.base_url}/call",
+                headers=self.headers,
+                json=payload,
+            )
+            if resp.is_error:
+                raise RuntimeError(
+                    f"VAPI create_call_from_assistant_id failed ({resp.status_code}): {resp.text}"
+                )
             return resp.json()
 
     async def get_call_status(self, call_id: str) -> str:

@@ -1,0 +1,138 @@
+[
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d87c4-c2b3-7000-bf24-066c2fbf2f50",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "706eab38-425f-497b-867c-28a0a5a4d790",
+    "created_at": "2026-04-13T16:55:12.344850",
+    "transcript": "Assistant: Hi,\nAssistant: Hi, Sarvesh Batachari.\nAssistant: Hi, Sarvesh Bhattacharya.\nAssistant: This is Roo calling\nAssistant: This is Roo calling from Sweet Route,\nAssistant: This is Roo calling from Sweet Route, Toys and Men\nAssistant: This is Roo calling from Sweet Root, Toys and Memories.\nAssistant: I was just speaking\nAssistant: I was just speaking with you on our chat.\nAssistant: I was just speaking with you on our chat.\nAssistant: How can I\nAssistant: How can I assist you today?\nAssistant: How can I assist you today?\nUser: Hello?\nUser: Hello?\nAssistant: Hi, Sarve.\nAssistant: Hi, Sarvesh. How can I assist\nAssistant: Hi, Sarvesh. How can I assist you today?\nUser: Who is this?\nAssistant: I'm Roo.\nAssistant: I'm Roo.\nAssistant: Your assistant from\nAssistant: Your assistant from Sweet Root Toys\nAssistant: Your assistant from Sweet Root Toys and Memories in Bengal\nAssistant: Your assistant from Sweet Root Toys and Memories in Bengaluru.\nAssistant: How can I help you\nAssistant: How can I help you today?"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d87f6-eeb6-7000-b250-276df74c6f28",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "f08ee5fa-01ad-4e85-ab6f-a10c495fea4f",
+    "created_at": "2026-04-13T17:50:00.286732"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8a56-3770-755d-9869-cd4051f9f160",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "48f740a8-bc31-4dfa-ac56-c0f4319f6543",
+    "created_at": "2026-04-14T04:53:19.564699"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8a67-5b23-755f-b1a1-9c9a6238ae2d",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "c5a2773a-9791-418a-bcfb-7809342158ca",
+    "created_at": "2026-04-14T05:12:00.927110"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8a69-50db-7bb8-b6cf-43f4c845c12d",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "a1087d5f-35e5-4849-9b39-aef2840ffd9e",
+    "created_at": "2026-04-14T05:14:10.127063"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8aa9-d79f-7ee0-b182-78c9c26247ff",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "2c581bc6-7bb7-4469-ae75-4de127502d9b",
+    "created_at": "2026-04-14T06:24:39.124575"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8aaf-a89c-755d-9a03-06ac8777a309",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "c9cd7a11-ff4d-4427-b592-63ef06600074",
+    "created_at": "2026-04-14T06:31:00.645856"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8ac0-9584-7ff6-a84a-1efbd0785b0a",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "45173a55-09d9-4807-a704-dc111990ff78",
+    "created_at": "2026-04-14T06:49:28.005907"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8acb-ed03-700f-8c76-c471c651b340",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "499f870e-887e-40b7-bf27-32433d66c86b",
+    "created_at": "2026-04-14T07:01:53.756188"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8acd-7172-755d-a7e8-dd8d64b45356",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "f71da317-6c9f-4fa9-b6a4-3d5242675421",
+    "created_at": "2026-04-14T07:03:30.836703"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8ae3-bc4c-755d-9b25-ad689db4c94e",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh",
+    "id": "b18ee9ba-5dd4-4627-a49c-d39a060a9ce4",
+    "created_at": "2026-04-14T07:27:52.881705"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8b23-91d8-7000-863e-31ddc2408996",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh",
+    "id": "b7a3ca59-6a15-451b-bed3-26801ae0cec8",
+    "created_at": "2026-04-14T08:37:37.324661"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8b30-ab0e-7ee0-b85f-5da7adedb04a",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh",
+    "id": "5bc44bd6-ac26-4182-83a7-95537b3fcafe",
+    "created_at": "2026-04-14T08:51:54.739889"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8b35-7c2b-777d-bd36-9356ab58ae46",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh",
+    "id": "3f8e9bf1-f87a-4bd5-9a43-10476bc90c6e",
+    "created_at": "2026-04-14T08:57:09.421351"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8be5-98ae-7000-a298-17e9ddf4e686",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh",
+    "id": "017153dd-90e7-44bf-a792-6ff3b90de145",
+    "created_at": "2026-04-14T12:09:33.014622"
+  }
+]

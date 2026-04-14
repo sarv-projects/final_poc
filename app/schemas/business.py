@@ -56,6 +56,41 @@ class BusinessUpdate(BusinessBase):
     phone_number: Optional[str] = Field(None, max_length=20)
     display_name: Optional[str] = Field(None, max_length=255)
     fallback_number: Optional[str] = Field(None, max_length=20)
+    city: Optional[str] = None
+    hours: Optional[str] = None
+    services: Optional[str] = None
+
+    # Slack
+    nango_connection_id: Optional[uuid.UUID] = None
+    slack_workspace: Optional[str] = None
+    slack_live_channel: Optional[str] = None
+    slack_summary_channel: Optional[str] = None
+
+    # Voice
+    voice_id: Optional[str] = None
+
+    # Outbound
+    outbound_welcome_template: Optional[str] = None
+    callback_trigger_phrase: Optional[str] = None
+    max_call_duration_minutes: Optional[int] = None
+    enable_voice_callbacks: Optional[bool] = None
+    inject_chat_context: Optional[bool] = None
+    post_call_summary_to_chat: Optional[bool] = None
+
+    # Inbound
+    inbound_welcome_template: Optional[str] = None
+    enable_inbound_call_handling: Optional[bool] = None
+
+    # Shared behavior
+    human_transfer_on_escalation: Optional[bool] = None
+    check_with_owner_before_transfer: Optional[bool] = None
+    owner_check_method: Optional[str] = None
+    owner_check_timeout_seconds: Optional[int] = None
+    intent_based_transfer_detection: Optional[bool] = None
+    owner_initiated_handover: Optional[bool] = None
+    live_transcript_to_slack: Optional[bool] = None
+    whisper_coaching_via_slack: Optional[bool] = None
+    call_recording_enabled: Optional[bool] = None
 
 
 class BusinessResponse(BusinessBase):

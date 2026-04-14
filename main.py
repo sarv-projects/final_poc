@@ -1,15 +1,13 @@
 """SuperOwl Voice AI POC — Main Application Entry Point."""
 
-import pathlib
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+import pathlib
 
-from app.core.database import engine
-from app.models import Base
 from app.routers import (
     businesses,
     onboarding,
@@ -25,11 +23,8 @@ from app.routers import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown events."""
-    # Create tables if using SQLite (for production use Alembic)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # No database setup needed — using JSON file storage
     yield
-    await engine.dispose()
 
 
 app = FastAPI(
@@ -53,6 +48,13 @@ app.include_router(businesses.router, prefix="/businesses", tags=["Businesses"])
 app.include_router(prompts.router, prefix="/prompts", tags=["Prompts"])
 app.include_router(trigger.router, prefix="/trigger", tags=["Call Triggers"])
 app.include_router(vapi_webhook.router, prefix="/vapi-webhook", tags=["VAPI Webhooks"])
+# Note: /vapi-webhook/notify-owner and /vapi-webhook/owner-decision are handled by the same router
+
+# Dual-agent endpoints (must be at root level for VAPI tool calls)
+from app.routers.vapi_webhook import notify_owner, owner_decision
+app.add_api_route("/notify-owner", notify_owner, methods=["POST"], tags=["Dual Agent"])
+app.add_api_route("/owner-decision", owner_decision, methods=["POST"], tags=["Dual Agent"])
+
 app.include_router(slack_events.router, prefix="/slack/events", tags=["Slack Events"])
 app.include_router(
     slack_actions.router, prefix="/slack/actions", tags=["Slack Actions"]

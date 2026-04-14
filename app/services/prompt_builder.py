@@ -3,11 +3,14 @@
 
 class PromptBuilder:
     def render(self, template: str, variables: dict) -> str:
-        """Replace {{variable}} placeholders with values."""
+        """Replace {{variable}} and {variable} placeholders with values."""
         result = template
         for key, value in variables.items():
-            placeholder = f"{{{{{key}}}}}"
-            result = result.replace(placeholder, str(value or ""))
+            rendered_value = str(value or "")
+            double_placeholder = f"{{{{{key}}}}}"
+            single_placeholder = f"{{{key}}}"
+            result = result.replace(double_placeholder, rendered_value)
+            result = result.replace(single_placeholder, rendered_value)
         return result
 
     def build_system_prompt(
@@ -18,7 +21,7 @@ class PromptBuilder:
     ) -> str:
         """Build the final system prompt for a call."""
         variables = {
-            "agentName": "Roo",
+            "agentName": "Ananya",
             "businessName": business.get("display_name", ""),
             "city": business.get("city", "Bengaluru"),
             "hours": business.get("hours", "business hours"),

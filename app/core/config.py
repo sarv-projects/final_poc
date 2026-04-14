@@ -2,7 +2,6 @@
 
 from typing import Optional
 
-from pydantic import ConfigDict
 from pydantic_settings import BaseSettings
 
 
@@ -13,9 +12,6 @@ class Settings(BaseSettings):
         "env_file": ".env",
         "extra": "ignore",
     }
-    # Database
-    DATABASE_URL: str = "sqlite:///./superowl.db"
-
     # VAPI
     VAPI_API_KEY: str
     VAPI_OUTBOUND_PHONE: str  # The phone number VAPI uses for outbound calls
@@ -29,18 +25,23 @@ class Settings(BaseSettings):
     NANGO_SECRET_KEY: str
     NANGO_BASE_URL: str = "https://api.nango.dev"
     NANGO_INTEGRATION_ID: str = "slack"
+    NANGO_WEBHOOK_SECRET: Optional[str] = None
 
     # Groq
     GROQ_API_KEY: str
 
+    # Optional ElevenLabs key for in-UI voice previews
+    ELEVENLABS_API_KEY: Optional[str] = None
+
     # Vobiz SIP
     VOBIZ_SIP_DOMAIN: str = "40942180.sip.vobiz.ai"
 
+    # Demo business seed
+    BUSINESS_PHONE_NUMBER: str = "+919901540581"
+    BUSINESS_FALLBACK_NUMBER: Optional[str] = None
+
     # Slack (optional direct webhook)
     SLACK_WEBHOOK_URL: Optional[str] = None
-
-    # Redis (optional)
-    REDIS_URL: Optional[str] = None
 
     # Feature flags
     FALLBACK_ON_NO_ANI_MATCH: bool = False

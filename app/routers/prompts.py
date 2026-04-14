@@ -1,45 +1,52 @@
 """Shared system prompt management."""
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter
 
-from app.core.database import get_db
-from app.models.prompt_template import PromptTemplate
+from app.core import json_storage
 from app.schemas.webhook import PromptUpdate
 
 router = APIRouter()
 
 
 @router.get("/shared")
-async def get_shared_prompt(db: AsyncSession = Depends(get_db)):
+async def get_shared_prompt():
     """Get the global shared system prompt template."""
-    result = await db.execute(select(PromptTemplate).limit(1))
-    template = result.scalar_one_or_none()
-    if template:
-        return {"prompt": template.shared_system_prompt}
+    templates = await json_storage.list_prompt_templates()
+    if templates and len(templates) > 0:
+        template = templates[0]
+        if isinstance(template, dict):
+            return {"prompt": template.get("shared_system_prompt", "")}
+        elif hasattr(template, "shared_system_prompt"):
+            return {"prompt": template.shared_system_prompt}
     # Default prompt
     return {
-        "prompt": """You are {{agentName}}, a warm and professional voice assistant for {{businessName}} in {{city}}.
-Business hours: {{hours}}.
-Services offered: {{services}}.
-Keep responses under 25 words. If transferring: "Let me connect you with our team." """
+        "prompt": """You are {{agentName}}, a warm, friendly, and professional voice assistant for {{businessName}} in {{city}}.
+
+Speak naturally and calmly. Keep responses short, clear, and human.
+
+Your goals:
+- Understand the caller's request
+- Answer product, service, pricing, and booking questions clearly
+- If the caller needs the owner or the issue is urgent, offer a transfer
+- Confirm the caller's name and callback number before ending the call
+
+If transferring: "Let me connect you with our team directly."
+Then transfer to {{fallbackNumber}}."""
     }
 
 
 @router.put("/shared")
-async def update_shared_prompt(
-    update: PromptUpdate, db: AsyncSession = Depends(get_db)
-):
+async def update_shared_prompt(update: PromptUpdate):
     """Update the global shared system prompt template."""
-    result = await db.execute(select(PromptTemplate).limit(1))
-    template = result.scalar_one_or_none()
-
-    if template:
-        template.shared_system_prompt = update.prompt
+    templates = await json_storage.list_prompt_templates()
+    if templates and len(templates) > 0:
+        template = templates[0]
+        template["shared_system_prompt"] = update.prompt
+        await json_storage.update_prompt_template(template.get("id"), template)
     else:
-        template = PromptTemplate(shared_system_prompt=update.prompt)
-        db.add(template)
-
-    await db.commit()
+        # Create new template
+        await json_storage.create_prompt_template({
+            "name": "default",
+            "shared_system_prompt": update.prompt,
+        })
     return {"status": "updated"}

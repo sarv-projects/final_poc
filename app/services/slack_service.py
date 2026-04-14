@@ -196,5 +196,70 @@ class SlackService:
             },
         )
 
+    async def send_owner_approval_request(
+        self,
+        connection_id: str,
+        channel: str,
+        customer_name: str,
+        customer_phone: str,
+        reason: str,
+        call_id: str,
+        business_name: str,
+    ) -> dict:
+        """Send Slack message asking owner to approve transfer to them."""
+        blocks = [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*📞 Transfer Request — {business_name}*"
+                },
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"type": "mrkdwn", "text": f"*CUSTOMER*\n{customer_name}"},
+                    {"type": "mrkdwn", "text": f"*PHONE*\n{customer_phone}"},
+                    {"type": "mrkdwn", "text": f"*REASON*\n{reason}"},
+                    {"type": "mrkdwn", "text": f"*CALL ID*\n`{call_id}`"},
+                ],
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": "*Do you want to take this call?*"
+            },
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "✅ Yes, transfer to me"},
+                        "action_id": "approve_transfer",
+                        "style": "primary",
+                        "value": call_id,
+                    },
+                    {
+                        "type": "button",
+                        "text": {"type": "plain_text", "text": "❌ No, stay on AI"},
+                        "action_id": "decline_transfer",
+                        "style": "danger",
+                        "value": call_id,
+                    },
+                ],
+            },
+        ]
+
+        return await nango_client.proxy_request(
+            connection_id=connection_id,
+            method="POST",
+            endpoint="chat.postMessage",
+            data={
+                "channel": channel,
+                "blocks": blocks,
+                "attachments": [{"color": "#f59e0b"}],
+            },
+        )
+
 
 slack_service = SlackService()

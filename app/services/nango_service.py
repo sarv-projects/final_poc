@@ -58,11 +58,15 @@ class NangoService:
 
     async def list_channels(self, connection_id: str) -> list:
         """List Slack channels for a connected workspace."""
-        result = await self.proxy_request(
-            connection_id=connection_id,
-            method="GET",
-            endpoint="conversations.list",
-        )
+        try:
+            result = await self.proxy_request(
+                connection_id=connection_id,
+                method="GET",
+                endpoint="conversations.list",
+            )
+        except httpx.HTTPStatusError as e:
+            detail = e.response.text if e.response is not None else str(e)
+            raise RuntimeError(f"Nango channels error: {detail}") from e
         channels = result.get("channels", [])
         return [c for c in channels if not c.get("is_archived", False)]
 

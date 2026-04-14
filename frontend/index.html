@@ -401,11 +401,13 @@
             height: 28px;
             background: #5b5ef4;
             border-radius: 50%;
+            border: none;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-size: 10px;
+            cursor: pointer;
         }
 
         /* Info Box */
@@ -681,7 +683,7 @@
                 <div style="margin-top: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <label style="margin: 0;">Message Template</label>
-                        <button class="btn btn-ai" onclick="alert('AI generate triggered')">✨ AI Generate</button>
+                        <button class="btn btn-ai" onclick="generateWelcome('outbound')">✨ AI Generate</button>
                     </div>
                     <textarea id="outbound-welcome">Hi {customer_name}, this is Roo calling from {business_name}! I was just speaking with you on our chat. I'm here to help you further. How can I assist you today?</textarea>
                     <div class="hint">Variables: {customer_name}, {business_name}, {chat_summary}</div>
@@ -739,7 +741,7 @@
                 <div style="margin-top: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <label style="margin: 0;">Message Template</label>
-                        <button class="btn btn-ai" onclick="alert('AI generate triggered')">✨ AI Generate</button>
+                        <button class="btn btn-ai" onclick="generateWelcome('inbound')">✨ AI Generate</button>
                     </div>
                     <textarea id="inbound-welcome">Thank you for calling {{businessName}}! I'm Roo, your AI assistant. How can I help you today?</textarea>
                     <div class="hint">Variables: {{businessName}}, {{city}}, {{hours}} — filled from the ANI registry per business.</div>
@@ -774,7 +776,7 @@
                 <div style="margin-top: 16px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <label style="margin: 0;">Prompt Template</label>
-                        <button class="btn btn-ai" onclick="alert('AI generate triggered')">✨ AI Generate</button>
+                        <button class="btn btn-ai" onclick="generatePrompt()">✨ AI Generate</button>
                     </div>
                     <textarea id="system-prompt" style="min-height: 150px;">You are {{agentName}}, a warm and professional voice assistant for {{businessName}} in {{city}}.
 Business hours: {{hours}}.
@@ -804,7 +806,7 @@ Always confirm the caller's name and callback number before ending.</textarea>
                             <div class="voice-name">Priya</div>
                             <div class="voice-tag">Warm · Female · Indian English</div>
                         </div>
-                        <div class="voice-play">▶</div>
+                        <button type="button" class="voice-play" onclick="previewVoice(event, 'pMsXgVXv3BLzUgSXRplE', 'Priya')">▶</button>
                     </div>
                     <div class="voice-option" data-voice="ack0QsRaQyDLnVyMQTSd">
                         <div class="voice-avatar">👨</div>
@@ -812,7 +814,7 @@ Always confirm the caller's name and callback number before ending.</textarea>
                             <div class="voice-name">Arjun</div>
                             <div class="voice-tag">Confident · Male · Indian English</div>
                         </div>
-                        <div class="voice-play">▶</div>
+                        <button type="button" class="voice-play" onclick="previewVoice(event, 'ack0QsRaQyDLnVyMQTSd', 'Arjun')">▶</button>
                     </div>
                     
                 </div>
@@ -1122,16 +1124,61 @@ Always confirm the caller's name and callback number before ending.</textarea>
             document.getElementById('slack-config').classList.add('visible');
         }
 
+        function setBusinessIdInUrl(businessId) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('business_id', businessId);
+            window.history.replaceState({}, '', url.toString());
+        }
+
+        async function resolveBusinessId(preferredBusinessId) {
+            if (preferredBusinessId) {
+                try {
+                    const res = await fetch(`${BASE_URL}/businesses/${preferredBusinessId}`);
+                    if (res.ok) return preferredBusinessId;
+                } catch (e) {
+                    console.warn('Business lookup failed, trying fallback flow:', e);
+                }
+            }
+
+            try {
+                const listRes = await fetch(`${BASE_URL}/businesses/`);
+                if (listRes.ok) {
+                    const businesses = await listRes.json();
+                    if (Array.isArray(businesses) && businesses.length > 0) {
+                        return businesses[0].id;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not list businesses:', e);
+            }
+
+            const seedRes = await fetch(`${BASE_URL}/playground/seed`, { method: 'POST' });
+            if (!seedRes.ok) throw new Error(`Could not seed demo data (HTTP ${seedRes.status})`);
+
+            const seedData = await seedRes.json();
+            if (!seedData.business_id) {
+                throw new Error('Seed endpoint did not return business_id');
+            }
+            return seedData.business_id;
+        }
+
         // ── Load config from backend ───────────────────────────────────────────
         async function loadConfig() {
             // business_id comes from URL query param — each business owner has their own URL
             // In production this would come from auth session
             const params = new URLSearchParams(window.location.search);
-            const bizId = params.get('business_id');
+            const requestedBizId = params.get('business_id');
 
-            if (!bizId) {
-                showNoBusinessBanner('No <code>business_id</code> in URL.<br>Visit <code>/?business_id=&lt;uuid&gt;</code>');
+            let bizId;
+            try {
+                bizId = await resolveBusinessId(requestedBizId);
+            } catch (e) {
+                showNoBusinessBanner(`Could not initialize business: ${e.message}`);
                 return;
+            }
+
+            if (bizId !== requestedBizId) {
+                setBusinessIdInUrl(bizId);
             }
 
             let biz;
@@ -1196,6 +1243,11 @@ Always confirm the caller's name and callback number before ending.</textarea>
             // ── Slack connection state ─────────────────────────────────────────
             if (biz.nango_connection_id) {
                 showSlackConnected(biz.slack_workspace || 'Connected workspace');
+
+                // If workspace is connected, try to load channels
+                if (biz.slack_workspace && biz.slack_workspace !== 'Slack') {
+                    await loadSlackChannels(biz.phone_number);
+                }
             }
 
             // ── Shared system prompt ───────────────────────────────────────────
@@ -1271,25 +1323,237 @@ Always confirm the caller's name and callback number before ending.</textarea>
             }
         }
 
-        // ── Slack connect ──────────────────────────────────────────────────────
-        function connectSlack() {
-            const phone = prompt('Enter your business phone number (e.g. +919901540581):');
+        // ── Load Slack channels and populate dropdowns ─────────────────────────
+        async function loadSlackChannels(phone) {
             if (!phone) return;
 
+            try {
+                const channelsRes = await fetch(`${BASE_URL}/onboarding/slack/channels?phone=${encodeURIComponent(phone)}`);
+                if (!channelsRes.ok) return; // Silently fail - user can type manually
+
+                const channels = await channelsRes.json();
+                if (!channels || channels.length === 0) return;
+
+                const liveChannelInput = document.getElementById('live-channel');
+                const summaryChannelInput = document.getElementById('summary-channel');
+
+                // Create dropdowns
+                const liveSelect = document.createElement('select');
+                liveSelect.id = 'live-channel-select';
+                liveSelect.style.cssText = 'width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; background: white;';
+
+                const summarySelect = document.createElement('select');
+                summarySelect.id = 'summary-channel-select';
+                summarySelect.style.cssText = 'width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; background: white;';
+
+                // Add options
+                channels.forEach(channel => {
+                    const liveOption = document.createElement('option');
+                    liveOption.value = channel.id;
+                    liveOption.textContent = `#${channel.name}`;
+
+                    const summaryOption = document.createElement('option');
+                    summaryOption.value = channel.id;
+                    summaryOption.textContent = `#${channel.name}`;
+
+                    // Auto-select based on saved values
+                    if (liveChannelInput && channel.id === liveChannelInput.value) {
+                        liveOption.selected = true;
+                    }
+                    if (summaryChannelInput && channel.id === summaryChannelInput.value) {
+                        summaryOption.selected = true;
+                    }
+
+                    // Fallback auto-select common channels
+                    if (!liveOption.selected && (channel.name.includes('voice') || channel.name.includes('call'))) {
+                        liveOption.selected = true;
+                    }
+                    if (!summaryOption.selected && (channel.name.includes('summary') || channel.name.includes('call'))) {
+                        summaryOption.selected = true;
+                    }
+
+                    liveSelect.appendChild(liveOption);
+                    summarySelect.appendChild(summaryOption);
+                });
+
+                // Replace text inputs with dropdowns
+                if (liveChannelInput) {
+                    liveChannelInput.style.display = 'none';
+                    liveChannelInput.parentNode.insertBefore(liveSelect, liveChannelInput.nextSibling);
+                }
+
+                if (summaryChannelInput) {
+                    summaryChannelInput.style.display = 'none';
+                    summaryChannelInput.parentNode.insertBefore(summarySelect, summaryChannelInput.nextSibling);
+                }
+
+                // Update hidden inputs when dropdowns change
+                liveSelect.addEventListener('change', () => {
+                    if (liveChannelInput) liveChannelInput.value = liveSelect.value;
+                });
+
+                summarySelect.addEventListener('change', () => {
+                    if (summaryChannelInput) summaryChannelInput.value = summarySelect.value;
+                });
+
+                // Set initial values
+                if (liveChannelInput) liveChannelInput.value = liveSelect.value;
+                if (summaryChannelInput) summaryChannelInput.value = summarySelect.value;
+
+            } catch (err) {
+                console.warn('Could not load Slack channels:', err);
+            }
+        }
+
+        // ── Slack connect ──────────────────────────────────────────────────────
+        let slackConnectPhone = null;
+
+        function connectSlack() {
+            const phone = prompt(`Enter your business phone number.\nYour business phone is: +919611896916`);
+            if (!phone) return;
+
+            slackConnectPhone = phone;
+
             fetch(`${BASE_URL}/onboarding/connect/session?phone=${encodeURIComponent(phone)}`)
-                .then(r => r.json())
+                .then(async r => {
+                    const data = await r.json();
+                    if (!r.ok) {
+                        throw new Error(data.detail || `Server error (HTTP ${r.status})`);
+                    }
+                    return data;
+                })
                 .then(data => {
                     if (data.connect_link) {
                         window.open(data.connect_link, '_blank');
-                        // Optimistically show connected state
-                        // Real state update happens after OAuth callback triggers Nango webhook
-                        showSlackConnected('Connecting…');
-                        showToast('🔗 Slack OAuth opened — complete the flow in the new tab');
+                        showToast('🔗 Slack OAuth opened. Complete it in the popup, then click "Verify Connection".', 'success');
+
+                        // Replace connect button with verify button
+                        const connectBtn = document.getElementById('slack-connect-btn');
+                        if (connectBtn) connectBtn.style.display = 'none';
+
+                        const statusEl = document.getElementById('slack-status');
+                        if (statusEl) {
+                            statusEl.innerHTML = `
+                                <button class="verify-btn" onclick="verifySlackConnection()" style="padding: 4px 12px; background: #5b5ef4; color: white; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                                    ✅ Verify Connection
+                                </button>
+                            `;
+                        }
                     } else {
-                        showToast('❌ Could not get Slack connect link', 'error');
+                        showToast('❌ No connect link returned', 'error');
                     }
                 })
-                .catch(err => showToast(`❌ Error: ${err.message}`, 'error'));
+                .catch(err => {
+                    console.error('Slack connect failed:', err);
+                    showToast(`❌ ${err.message}`, 'error');
+                });
+        }
+
+        async function verifySlackConnection() {
+            if (!slackConnectPhone) {
+                showToast('⚠️ No phone number from OAuth flow', 'error');
+                return;
+            }
+
+            showToast('🔄 Verifying Slack connection...', 'success');
+
+            try {
+                // Step 1: Check if business has nango_connection_id and slack_workspace
+                const bizRes = await fetch(`${BASE_URL}/businesses/${currentBusinessId}`);
+                if (!bizRes.ok) throw new Error('Could not fetch business config');
+
+                const biz = await bizRes.json();
+
+                if (!biz.nango_connection_id) {
+                    showToast('⚠️ Slack OAuth not completed yet. Please complete the OAuth flow.', 'error');
+                    return;
+                }
+
+                if (!biz.slack_workspace || biz.slack_workspace === 'Slack') {
+                    showToast('⚠️ Slack connected but workspace name not synced yet. Refresh in a few seconds.', 'error');
+                    return;
+                }
+
+                // Step 2: Fetch actual Slack channels from Nango
+                const channelsRes = await fetch(`${BASE_URL}/onboarding/slack/channels?phone=${encodeURIComponent(slackConnectPhone)}`);
+                if (!channelsRes.ok) {
+                    throw new Error(`Could not fetch channels (HTTP ${channelsRes.status})`);
+                }
+
+                const channels = await channelsRes.json();
+
+                if (!channels || channels.length === 0) {
+                    showToast('✅ Slack connected but no channels found. You can type channel names manually.', 'success');
+                    showSlackConnected(biz.slack_workspace);
+                    return;
+                }
+
+                // Step 3: Populate channel dropdowns with actual Slack channels
+                const liveChannelInput = document.getElementById('live-channel');
+                const summaryChannelInput = document.getElementById('summary-channel');
+
+                // Create dropdowns
+                const liveSelect = document.createElement('select');
+                liveSelect.id = 'live-channel-select';
+                liveSelect.style.cssText = 'width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; background: white;';
+
+                const summarySelect = document.createElement('select');
+                summarySelect.id = 'summary-channel-select';
+                summarySelect.style.cssText = 'width: 100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: inherit; background: white;';
+
+                // Add options
+                channels.forEach(channel => {
+                    const liveOption = document.createElement('option');
+                    liveOption.value = channel.id;
+                    liveOption.textContent = `#${channel.name}`;
+
+                    const summaryOption = document.createElement('option');
+                    summaryOption.value = channel.id;
+                    summaryOption.textContent = `#${channel.name}`;
+
+                    // Auto-select common channels
+                    if (channel.name.includes('voice') || channel.name.includes('call')) {
+                        liveOption.selected = true;
+                    }
+                    if (channel.name.includes('summary') || channel.name.includes('call')) {
+                        summaryOption.selected = true;
+                    }
+
+                    liveSelect.appendChild(liveOption);
+                    summarySelect.appendChild(summaryOption);
+                });
+
+                // Replace text inputs with dropdowns
+                if (liveChannelInput) {
+                    liveChannelInput.style.display = 'none';
+                    liveChannelInput.parentNode.insertBefore(liveSelect, liveChannelInput.nextSibling);
+                }
+
+                if (summaryChannelInput) {
+                    summaryChannelInput.style.display = 'none';
+                    summaryChannelInput.parentNode.insertBefore(summarySelect, summaryChannelInput.nextSibling);
+                }
+
+                // Update live-channel and summary-channel hidden inputs when dropdowns change
+                liveSelect.addEventListener('change', () => {
+                    if (liveChannelInput) liveChannelInput.value = liveSelect.value;
+                });
+
+                summarySelect.addEventListener('change', () => {
+                    if (summaryChannelInput) summaryChannelInput.value = summarySelect.value;
+                });
+
+                // Set initial values
+                if (liveChannelInput) liveChannelInput.value = liveSelect.value;
+                if (summaryChannelInput) summaryChannelInput.value = summarySelect.value;
+
+                showSlackConnected(biz.slack_workspace);
+                showToast(`✅ Slack connected! ${channels.length} channels loaded.`, 'success');
+
+            } catch (err) {
+                console.error('Slack verification failed:', err);
+                showToast(`❌ ${err.message}`, 'error');
+            }
         }
 
         function disconnectSlack() {
@@ -1297,6 +1561,95 @@ Always confirm the caller's name and callback number before ending.</textarea>
             document.getElementById('slack-status').style.display = 'inline';
             document.getElementById('slack-connected').style.display = 'none';
             document.getElementById('slack-config').classList.remove('visible');
+        }
+
+        // ── AI Generate Welcome Message ──────────────────────────────────────
+        async function generateWelcome(type) {
+            const textareaId = type === 'outbound' ? 'outbound-welcome' : 'inbound-welcome';
+            const currentMessage = document.getElementById(textareaId).value;
+            const bizName = document.getElementById('biz-name').value || 'the business';
+            
+            // Find the button that was clicked
+            const buttons = document.querySelectorAll('.btn-ai');
+            let btn = null;
+            buttons.forEach(b => {
+                if (b.textContent.includes('AI Generate') && b.onclick && b.onclick.toString().includes(type)) {
+                    btn = b;
+                }
+            });
+            const originalText = btn ? btn.textContent : '✨ AI Generate';
+            
+            if (btn) {
+                btn.textContent = '⏳ Generating...';
+                btn.disabled = true;
+            }
+
+            try {
+                const res = await fetch(`${BASE_URL}/playground/generate-welcome`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: type,
+                        current_message: currentMessage,
+                        business_name: bizName
+                    })
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Generation failed (HTTP ${res.status})`);
+                }
+
+                const data = await res.json();
+                document.getElementById(textareaId).value = data.message || currentMessage;
+                showToast('✅ Welcome message generated!', 'success');
+
+            } catch (err) {
+                console.error('Welcome generation failed:', err);
+                showToast(`❌ ${err.message}`, 'error');
+            } finally {
+                if (btn) {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            }
+        }
+
+        // ── AI Generate System Prompt ────────────────────────────────────────
+        async function generatePrompt() {
+            const currentPrompt = document.getElementById('system-prompt').value;
+            const btn = document.querySelector('.btn-ai');
+            const originalText = btn.textContent;
+            
+            btn.textContent = '⏳ Generating...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`${BASE_URL}/playground/generate-prompt`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        current_prompt: currentPrompt,
+                        business_name: document.getElementById('biz-name').value,
+                        city: document.getElementById('biz-city')?.value || 'Bengaluru',
+                        industry: 'general'
+                    })
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Generation failed (HTTP ${res.status})`);
+                }
+
+                const data = await res.json();
+                document.getElementById('system-prompt').value = data.prompt || currentPrompt;
+                showToast('✅ Prompt generated successfully!', 'success');
+
+            } catch (err) {
+                console.error('Prompt generation failed:', err);
+                showToast(`❌ ${err.message}`, 'error');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         }
 
         // ── Reset form ─────────────────────────────────────────────────────────
@@ -1332,7 +1685,19 @@ Always confirm the caller's name and callback number before ending.</textarea>
             }
         }
 
-        // ── Playground Chat Simulation ─────────────────────────────────────────
+        // ── Playground Chat (backend-powered) ─────────────────────────────────
+        let playgroundHistory = [];
+        let activePreviewAudio = null;
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function appendMsg(role, text) {
             const msgs = document.getElementById('chat-messages');
             const isUser = role === 'user';
@@ -1340,7 +1705,7 @@ Always confirm the caller's name and callback number before ending.</textarea>
                 <div class="chat-msg ${isUser ? 'user' : 'ai'}">
                     <div class="c-av ${isUser ? 'hu' : 'ai'}">${isUser ? 'U' : 'R'}</div>
                     <div>
-                        <div class="c-bub">${text}</div>
+                        <div class="c-bub">${escapeHtml(text)}</div>
                         <div class="c-time">${isUser ? 'You' : 'Roo'} · just now</div>
                     </div>
                 </div>
@@ -1348,27 +1713,84 @@ Always confirm the caller's name and callback number before ending.</textarea>
             msgs.scrollTop = msgs.scrollHeight;
         }
 
+        async function previewVoice(event, voiceId, voiceName) {
+            event.stopPropagation();
+
+            try {
+                if (activePreviewAudio) {
+                    activePreviewAudio.pause();
+                    activePreviewAudio = null;
+                }
+
+                const res = await fetch(`${BASE_URL}/playground/voice-preview?voice_id=${encodeURIComponent(voiceId)}`);
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || `Voice preview failed (HTTP ${res.status})`);
+                }
+
+                const blob = await res.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                const audio = new Audio(audioUrl);
+                activePreviewAudio = audio;
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    if (activePreviewAudio === audio) activePreviewAudio = null;
+                };
+                await audio.play();
+            } catch (err) {
+                // Browser fallback when ElevenLabs preview is not configured.
+                const fallbackText = `Hi, I am ${voiceName}. This is a fallback preview from your browser voice.`;
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(fallbackText);
+                    utterance.rate = voiceName === 'Priya' ? 0.95 : 0.9;
+                    utterance.pitch = voiceName === 'Priya' ? 1.15 : 0.9;
+                    window.speechSynthesis.speak(utterance);
+                    showToast('Using local preview. Exact selected voice is applied by VAPI on real calls.', 'success');
+                } else {
+                    showToast(`❌ ${err.message}`, 'error');
+                }
+            }
+        }
+
         async function sendChat() {
             const inp = document.getElementById('chat-input');
             const text = inp.value.trim();
             if (!text) return;
+            if (!currentBusinessId) {
+                showToast('No business loaded for playground', 'error');
+                return;
+            }
             
             appendMsg('user', text);
+            playgroundHistory.push({ role: 'user', content: text });
             inp.value = '';
-            
-            const lower = text.toLowerCase();
-            const triggers = ['callback', 'book', 'call', 'contact', 'team', 'speak', 'talk'];
-            const needsCallback = triggers.some(t => lower.includes(t));
 
-            // Simulating API delay
-            setTimeout(() => {
-                if (needsCallback) {
-                    appendMsg('ai', "I'd be happy to arrange a callback so our team can help you properly! Please share your details below.");
-                    document.getElementById('collect-panel').style.display = 'block';
-                } else {
-                    appendMsg('ai', "That's interesting! I can help you with Sweet Root activities, pricing, or getting you in touch with the owner. Would you like to speak with someone?");
+            try {
+                const res = await fetch(`${BASE_URL}/playground/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        business_id: currentBusinessId,
+                        message: text,
+                        history: playgroundHistory.slice(0, -1)
+                    })
+                });
+                if (!res.ok) {
+                    throw new Error(`Playground chat failed (HTTP ${res.status})`);
                 }
-            }, 800);
+                const data = await res.json();
+                const reply = data.reply || 'I could not generate a response.';
+                appendMsg('ai', reply);
+                playgroundHistory.push({ role: 'assistant', content: reply });
+
+                if (data.needs_callback) {
+                    document.getElementById('collect-panel').style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err);
+                showToast(`❌ ${err.message}`, 'error');
+            }
         }
 
         function resetChat() {
@@ -1381,6 +1803,7 @@ Always confirm the caller's name and callback number before ending.</textarea>
                     </div>
                 </div>
             `;
+            playgroundHistory = [];
             document.getElementById('collect-panel').style.display = 'none';
             document.getElementById('call-panel').style.display = 'none';
             document.getElementById('pg-name').value = '';
@@ -1415,6 +1838,19 @@ Always confirm the caller's name and callback number before ending.</textarea>
             });
 
             try {
+                const selectedVoice = document.querySelector('.voice-option.selected')?.dataset.voice;
+                if (selectedVoice && currentBusinessId) {
+                    const voiceRes = await fetch(`${BASE_URL}/businesses/${currentBusinessId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ voice_id: selectedVoice })
+                    });
+                    if (!voiceRes.ok) {
+                        const err = await voiceRes.json().catch(() => ({}));
+                        throw new Error(err.detail || `Failed to sync selected voice (HTTP ${voiceRes.status})`);
+                    }
+                }
+
                 const payload = {
                     business_id: currentBusinessId,
                     customer_name: name,
@@ -1429,7 +1865,8 @@ Always confirm the caller's name and callback number before ending.</textarea>
                 });
 
                 if (!res.ok) {
-                    throw new Error(`Failed to trigger VAPI call (HTTP ${res.status})`);
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || `Failed to trigger VAPI call (HTTP ${res.status})`);
                 }
 
                 showToast('📞 Call initiated! Check your phone.', 'success');
