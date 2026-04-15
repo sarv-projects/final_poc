@@ -1,35 +1,50 @@
 ================================================================================
 SUPEROWL_FINAL_POC - COMPLETE PROJECT CONTENTS
 ================================================================================
-Generated: 2026-04-14
+Generated: 2026-04-15
 Directory: /home/sarvesh/internship/superowl_final_poc
+
+Recently modified (since 2026-04-14):
+  - superowl_final_poc.zip
+  - app/services/slack_service.py
+  - app/services/call_orchestrator.py
+  - app/routers/vapi_webhook.py
+  - app/routers/playground.py
+  - app/routers/slack_actions.py
+  - data/prompts.json
+  - data/call_logs.json
+  - data/businesses.json
+  - frontend/index.html
+  - .env
+  - main.py
+  - project_contents.txt
+  (git internals and __pycache__ entries omitted)
 ================================================================================
 
 
-================================================================================
 FILE: .env
-================================================================================
-# Test environment variables (safe dummy values for running tests locally)
+===============================================================================
+# Test environment variables (values masked for safety)
 DATABASE_URL=sqlite:///./superowl_test.db
 
 
-# VAPI
-VAPI_API_KEY=5d0af1cc-be35-4720-8172-f76ef378ac99
+# VAPI (values masked)
+VAPI_API_KEY=<MASKED>
 VAPI_OUTBOUND_PHONE=+919611896916
-VAPI_PHONE_NUMBER_ID=8c24ce97-04a6-4ea0-87ae-9c23aa2b36ed
-VAPI_INBOUND_ASSISTANT_ID=31726000-8b0d-4519-9ade-26c9d35a3be9
-VAPI_OUTBOUND_ASSISTANT_ID=02455622-30e8-46fc-a93d-13d9c356f404 #ananya
-VAPI_OWNER_ASSISTANT_ID=2b5073a3-c635-4dec-ab94-f8f22d3502e9 #This is the personal assistant
-VAPI_WEBHOOK_URL=https://unpractical-shondra-undeflected.ngrok-free.dev/vapi-webhook
+VAPI_PHONE_NUMBER_ID=<MASKED>
+VAPI_INBOUND_ASSISTANT_ID=<MASKED>
+VAPI_OUTBOUND_ASSISTANT_ID=<MASKED>  # ananya
+VAPI_OWNER_ASSISTANT_ID=<MASKED>    # owner PA
+VAPI_WEBHOOK_URL=<MASKED_URL>
 
-# Nango
-NANGO_SECRET_KEY=b2262d50-af76-440f-bafa-9b3b0d73726c
+# Nango (values masked)
+NANGO_SECRET_KEY=<MASKED>
 NANGO_BASE_URL=https://api.nango.dev
 NANGO_INTEGRATION_ID=slack
 NANGO_WEBHOOK_SECRET=
 
-# Groq
-GROQ_API_KEY=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
+# Groq (masked)
+GROQ_API_KEY=<MASKED>
 
 # Vobiz SIP
 VOBIZ_SIP_DOMAIN=40942180.sip.vobiz.ai
@@ -39,6 +54,8 @@ BUSINESS_PHONE_NUMBER=+919611896916
 BUSINESS_FALLBACK_NUMBER=+919611896916
 
 # Misc
+FALLBACK_ON_NO_ANI_MATCH=false
+
 FALLBACK_ON_NO_ANI_MATCH=false
 
 
@@ -842,128 +859,87 @@ async def nango_webhook(request: Request):
     return {"status": "ok"}
 ---------------- FILE: app/routers/slack_events.py ----------------
 from fastapi import APIRouter, Request
-from app.core.state import call_sessions
-import asyncio, httpx
+
+from app.core import json_storage
+from app.services.nango_service import nango_client
+from app.services.vapi_service import vapi_client
 
 router = APIRouter()
 
-@router.post("/slack/events")
+
+@router.post("")
 async def slack_events(request: Request):
+    """Handle Slack events (URL verification and messages)."""
     body = await request.json()
-    
-    # 1. Handle Slack URL verification challenge
+
+    # Slack URL verification challenge
     if body.get("type") == "url_verification":
-        challenge = body.get("challenge")
-        print("Slack URL Verified!!")
-        return {"challenge": challenge}
-        
+        return {"challenge": body.get("challenge")}
+
+    # Handle event callbacks
     event = body.get("event", {})
-    
-    # 2. Handle message events
     event_type = event.get("type")
-    text = event.get("text", "")
-    thread_ts = event.get("thread_ts")
-    bot_id = event.get("bot_id")
 
-    # RULE: Must be a message, must be in a thread, and MUST NOT be from our own bot
-    if event_type == "message" and thread_ts and not bot_id:
-        print(f"\n🗣️ OWNER MESSAGE RECEIVED: {text}")
-        
-        # 3. Find which call this thread_ts belongs to
-        target_call_id = None
-        target_control_url = None
-        
-        for call_id, session_data in call_sessions.items():
-            if session_data.get("slack_thread_ts") == thread_ts:
-                target_call_id = call_id
-                target_control_url = session_data.get("control_url")
+    if event_type == "message" and event.get("thread_ts"):
+        # Message in a thread — check if it's a live call thread
+        thread_ts = event["thread_ts"]
+        message_text = event.get("text", "")
+        bot_id = event.get("bot_id")
+
+        # Ignore bot messages to prevent loops
+        if bot_id:
+            return {"status": "ignored_bot_message"}
+
+        # Find call log by thread_ts
+        all_logs = await json_storage.list_all_call_logs(limit=10000)
+        call_log = None
+        for log in all_logs:
+            if log.get("slack_live_thread_ts") == thread_ts:
+                call_log = log
                 break
-                
-        if target_call_id and target_control_url:
-            print(f"✅ Matched to Call ID: {target_call_id}")
-            print(f"🔗 Ready to inject via Control URL: {target_control_url}")
-            
-            clean_text = text.lower().strip()
-            
-            # --- TAKEOVER ---
-            if clean_text == "takeover" or clean_text == "!takeover":
-                fallback_number = call_sessions[target_call_id]["config"].fallback_number
-                payload = {
-                    "type": "transfer",
-                    "destination": {
-                        "type": "sip",
-                        "sipUri": f"sip:{fallback_number}@40942180.sip.vobiz.ai"
-                    }
-                }
-                print("🔀 TAKEOVER payload built")
-            
-            # --- END CALL ---
-            elif clean_text in ["end", "reject", "stop", "hangup"]:
-                payload = {
-                    "type": "end-call",
-                    "message": {
-                        "role": "system",
-                        "content": (
-                            "The owner has asked to end this call. "
-                            "Say: 'I'm sorry, the owner is not available right now. Please call back later. Goodbye!' "
-                            "Then call end_call_tool immediately."
-                        )
-                    }
-                }
-                print("🗣️ WHISPER payload built")
-            
-            # --- WHISPER (default) ---
-            else:
-                payload = {
-                    "type": "add-message",
-                    "message": {
-                        "role": "system",
-                        "content": f"The business owner just whispered: '{text}'. Naturally incorporate this into your next response to the customer."
-                    }
-                }
-                print("🗣️ WHISPER payload built")
 
-            # Fire the command to VAPI (works for all three cases)
-            async def send_command():
-                async with httpx.AsyncClient() as client:
-                    try:
-                        resp = await client.post(target_control_url, json=payload)
-                        print(f"🎯 Command injected! Vapi replied: {resp.status_code}")
-                    except Exception as e:
-                        print(f"❌ Failed to inject command: {e}")
-                        
-            asyncio.create_task(send_command())
-            
-        else:
-            print("⚠️ Could not find an active call for this Slack thread.")
+        if not call_log:
+            return {"status": "not_a_call_thread"}
 
-    # Always return 200 OK so Slack doesn't retry sending the message
+        # Get business to check whisper setting
+        business = await json_storage.get_business(call_log["business_id"])
+
+        if not business or not business.get("whisper_coaching_via_slack", True):
+            return {"status": "whisper_disabled"}
+
+        # Inject whisper into VAPI call
+        whisper_payload = {
+            "role": "system",
+            "content": f"WHISPER FROM OWNER: {message_text}",
+        }
+
+        try:
+            await vapi_client.send_message(call_log["vapi_call_id"], whisper_payload)
+
+            # Confirm in Slack thread
+            if business.get("nango_connection_id") and call_log.get("slack_live_thread_ts"):
+                await nango_client.proxy_request(
+                    connection_id=str(business.get("nango_connection_id")),
+                    method="POST",
+                    endpoint="chat.postMessage",
+                    data={
+                        "channel": business.get("slack_live_channel"),
+                        "thread_ts": call_log.get("slack_live_thread_ts"),
+                        "text": f"✅ Whisper delivered: _{message_text}_",
+                    },
+                )
+        except Exception as e:
+            print(f"Whisper injection failed: {e}")
+
     return {"status": "ok"}
 ---------------- FILE: app/routers/vapi_webhook.py ----------------
-from fastapi import APIRouter, Request
-from app.services.vapi_handlers import EVENT_HANDLERS  # Changed
-import asyncio
-
-router = APIRouter()
-
-@router.post("/vapi/server")
-async def vapi_server(request: Request):
-    body = await request.json()
-    message = body.get("message", {})
-    msg_type = message.get("type", "")
-    
-    context = {
-        "call_id": message.get("call", {}).get("id", "unknown"),
-        "customer_number": message.get("call", {}).get("customer", {}).get("number", ""),
-        "call": message.get("call", {}),
-        "message": message
-    }
-
-    handler = EVENT_HANDLERS.get(msg_type)
-    if handler:
-        response = await handler(context) if asyncio.iscoroutinefunction(handler) else handler(context)
-        return response or {}
-    return {}
+-- NOTE: The full, current implementation of `app/routers/vapi_webhook.py` is
+-- included later in this document as a complete 630-line preview. This
+-- earlier short handler (which forwarded to `app.services.vapi_handlers`) was
+-- superseded by a larger, self-contained webhook handler that implements the
+-- dual-agent flow, transcript handling, owner notification, and background
+-- VAPI control operations. See the later `FILE: app/routers/vapi_webhook.py`
+-- section for the authoritative source.
 ---------------- FILE: app/services/__init__.py ----------------
 [binary file content shown as base64]
 

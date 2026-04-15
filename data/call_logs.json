@@ -134,5 +134,23 @@
     "customer_name": "Sarvesh",
     "id": "017153dd-90e7-44bf-a792-6ff3b90de145",
     "created_at": "2026-04-14T12:09:33.014622"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8fce-64f1-755c-b336-fb42517c3085",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "68118b49-f61f-464c-8422-6bc54375c021",
+    "created_at": "2026-04-15T06:22:39.819986"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d8fdd-1f23-733a-b1b0-ad5f5d199b30",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarvesh Bhattacharyya",
+    "id": "6befed9c-0d2b-45d3-9d84-ec8957827e58",
+    "created_at": "2026-04-15T06:38:46.643805"
   }
 ]
