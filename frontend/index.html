@@ -149,8 +149,8 @@ textarea{min-height:90px;line-height:1.6}
 .s-orange{background:var(--orange-light);color:var(--orange)}
 .s-red{background:var(--red-light);color:var(--red)}
 .s-gray{background:var(--bg);color:var(--text-2)}
-.s-blue{background:var(--teal-light);color:var(--teal)}
-.s-purple{background:var(--purple-light);color:var(--purple)}
+.s-blue{background:var(--teal-light);color:var,--teal)}
+.s-purple{background:var(--purple-light);color:var,--purple)}
 
 /* PLAYGROUND */
 .pg-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
@@ -209,7 +209,7 @@ textarea{min-height:90px;line-height:1.6}
 .tr-bub{max-width:84%;padding:7px 12px;border-radius:12px;font-size:12.5px;line-height:1.5}
 .ai .tr-bub{background:var(--accent-light);color:var(--text);border-top-left-radius:3px}
 .cu .tr-bub{background:#e9e9f0;color:var(--text);border-top-right-radius:3px}
-.ow .tr-bub{background:var(--green-light);color:var(--text);border-top-left-radius:3px}
+.ow .tr-bub{background:var(--green-light);color:var,--text);border-top-left-radius:3px}
 .tr-lbl{font-size:10.5px;color:var(--text-3);margin-top:3px}
 .whisper-msg{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 12px;font-size:12px;color:#92400e;display:flex;align-items:flex-start;gap:8px;margin:4px 0}
 .call-actions{padding:11px 14px;display:flex;align-items:center;justify-content:center;gap:10px;border-top:1px solid var(--border);background:var(--card)}
@@ -463,7 +463,7 @@ textarea{min-height:90px;line-height:1.6}
             <label style="margin:0">Message</label>
             <button class="ai-gen-btn" onclick="generateWelcome('outbound')">✨ AI Generate</button>
           </div>
-          <textarea id="outbound-welcome">Hi {customer_name}, this is Roo calling from {business_name}! I was just speaking with you on our chat. I'm here to help you further. How can I assist you today?</textarea>
+          <textarea id="outbound-welcome">Hi {customer_name}, this is Roo calling from {business_name}! I was just speaking with you on our chat  regarding your enquiry about {chat_summary}. I'm here to help you further. How can I assist you today?</textarea>
           <div class="hint">Variables: {customer_name}, {business_name}, {chat_summary}</div>
           <div class="form-group" style="margin-bottom:0;margin-top:12px">
             <label>Max Call Duration</label>
@@ -688,12 +688,10 @@ Always confirm the caller's name and callback number before ending.</textarea>
         <div class="chat-sim">
           <div class="chat-header">
             <div class="online-dot"></div>
-            <div><div class="chat-title">Sweet Root – Toys &amp; Memories</div><div class="chat-sub">Powered by Roo · Outbound test</div></div>
+            <div><div class="chat-title">{{businessName}}</div><div class="chat-sub">Powered by Roo · Outbound test</div></div>
             <button onclick="resetChat()" style="margin-left:auto;padding:5px 11px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:inherit;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer">↺ Reset</button>
           </div>
-          <div class="chat-messages" id="chat-messages-out">
-            <div class="chat-msg ai"><div class="c-av ai">R</div><div><div class="c-bub">Hi! I'm Roo 🦉, your assistant for Sweet Root – Toys &amp; Memories. How can I help you today?</div><div class="c-time">Roo · just now</div></div></div>
-          </div>
+          <div class="chat-messages" id="chat-messages-out"></div>
           <div class="collect-panel" id="collect-panel-out" style="display:none">
             <div class="collect-label">📞 Enter your details for the AI callback</div>
             <div class="collect-fields"><input type="text" id="pg-name" placeholder="Your name" /><input type="tel" id="pg-phone" placeholder="+91 9XXXXXXXXX" /></div>
@@ -810,8 +808,9 @@ Always confirm the caller's name and callback number before ending.</textarea>
 // ── Constants ──────────────────────────────────────────────────────────
 const BASE_URL = '';  // Same-origin — served by FastAPI at localhost:8000
 let currentBusinessId = null;
+let currentBusinessName = ''; // populated from backend (display_name)
 
-// NAV
+/* NAVIGATION */
 const navMap={
   'nav-config':'page-config','nav-playground':'page-playground',
   'nav-analytics':'page-analytics','nav-inbound':'page-inbound'
@@ -989,6 +988,15 @@ async function loadConfig() {
     }
 
     currentBusinessId = biz.id;
+    // set business display name for UI templates
+    currentBusinessName = biz.display_name || '{{businessName}}';
+
+    // update playground chat title and initial assistant message
+    const chatTitleEl = document.querySelector('.chat-title');
+    if (chatTitleEl) chatTitleEl.textContent = currentBusinessName;
+    // populate the chat messages area with the business-aware greeting
+    // call resetChat to ensure playgroundHistory and panels are reset
+    resetChat();
 
     // Profile
     if(document.getElementById('biz-name')) document.getElementById('biz-name').value = biz.display_name || '';
@@ -1222,51 +1230,82 @@ function connectSlack() {
 }
 
 async function verifySlackConnection() {
-    if (!slackConnectPhone) {
-        showToast('⚠️ No phone number from OAuth flow', 'error');
-        return;
-    }
+	if (!slackConnectPhone) {
+		showToast('⚠️ No phone number from OAuth flow', 'error');
+		return;
+	}
 
-    showToast('🔄 Verifying Slack connection...', 'success');
+	const verifyBtn = document.querySelector('#slack-status button');
+	if (verifyBtn) {
+		verifyBtn.disabled = true;
+		verifyBtn.textContent = '🔄 Verifying...';
+	}
 
-    try {
-        const bizRes = await fetch(`${BASE_URL}/businesses/${currentBusinessId}`);
-        if (!bizRes.ok) throw new Error('Could not fetch business config');
+	const pollForWorkspace = async (retries = 15, delay = 2000) => {
+		for (let i = 0; i < retries; i++) {
+			try {
+				// Use cache-busting to ensure we get the latest data
+				const bizRes = await fetch(`${BASE_URL}/businesses/${currentBusinessId}?t=${new Date().getTime()}`);
+				if (!bizRes.ok) {
+					console.warn(`Polling attempt ${i + 1} failed to fetch business.`);
+					await new Promise(resolve => setTimeout(resolve, delay));
+					continue;
+				}
 
-        const biz = await bizRes.json();
+				const biz = await bizRes.json();
 
-        if (!biz.nango_connection_id) {
-            showToast('⚠️ Slack OAuth not completed yet. Please complete the OAuth flow.', 'error');
-            return;
-        }
+				if (biz.nango_connection_id && biz.slack_workspace && biz.slack_workspace !== 'Slack') {
+					return biz; // Success!
+				}
 
-        if (!biz.slack_workspace || biz.slack_workspace === 'Slack') {
-            showToast('⚠️ Slack connected but workspace name not synced yet. Refresh in a few seconds.', 'error');
-            return;
-        }
+				await new Promise(resolve => setTimeout(resolve, delay));
 
-        const channelsRes = await fetch(`${BASE_URL}/onboarding/slack/channels?phone=${encodeURIComponent(slackConnectPhone)}`);
-        if (!channelsRes.ok) {
-            throw new Error(`Could not fetch channels (HTTP ${channelsRes.status})`);
-        }
+			} catch (e) {
+				console.error(`Error during polling attempt ${i + 1}:`, e);
+				await new Promise(resolve => setTimeout(resolve, delay));
+			}
+		}
+		return null; // Timeout
+	};
 
-        const channels = await channelsRes.json();
+	try {
+		const biz = await pollForWorkspace();
 
-        if (!channels || channels.length === 0) {
-            showToast('✅ Slack connected but no channels found. You can type channel names manually.', 'success');
-            showSlackConnected(biz.slack_workspace);
-            return;
-        }
+		if (!biz) {
+			throw new Error('Slack connection timed out. Please ensure you completed the auth flow and try again.');
+		}
 
-        await loadSlackChannels(slackConnectPhone);
+		const channelsRes = await fetch(`${BASE_URL}/onboarding/slack/channels?phone=${encodeURIComponent(slackConnectPhone)}`);
+		if (!channelsRes.ok) {
+			throw new Error(`Could not fetch channels (HTTP ${channelsRes.status})`);
+		}
 
-        showSlackConnected(biz.slack_workspace);
-        showToast(`✅ Slack connected! ${channels.length} channels loaded.`, 'success');
+		const channels = await channelsRes.json();
 
-    } catch (err) {
-        console.error('Slack verification failed:', err);
-        showToast(`❌ ${err.message}`, 'error');
-    }
+		if (!channels || channels.length === 0) {
+			showToast('✅ Slack connected but no public channels found. You can type channel names manually.', 'success');
+			showSlackConnected(biz.slack_workspace);
+			return;
+		}
+
+		await loadSlackChannels(slackConnectPhone);
+
+		showSlackConnected(biz.slack_workspace);
+		showToast(`✅ Slack connected! ${channels.length} channels loaded.`, 'success');
+
+	} catch (err) {
+		console.error('Slack verification failed:', err);
+		showToast(`❌ ${err.message}`, 'error');
+		// Reset the button on failure
+		const statusEl = document.getElementById('slack-status');
+		if (statusEl) {
+			statusEl.innerHTML = `
+                <button class="btn btn-primary btn-sm" onclick="verifySlackConnection()">
+                    ✅ Verify Connection
+                </button>
+            `;
+		}
+	}
 }
 
 function disconnectSlack() {
@@ -1453,6 +1492,23 @@ async function previewVoice(event, voiceId, voiceName) {
     }
 }
 
+function shouldShowOutboundCollectPanel(userText) {
+    const msg = (userText || '').toLowerCase().trim();
+    if (!msg) return false;
+
+    // Trigger only for explicit escalation/callback intent.
+    const intentPatterns = [
+        /\bchat\s+more\b/,
+        /\bcall\b/,
+        /\bcallback\b/,
+        /\bbook(?:ing)?\b/,
+        /\b(?:want|wanna|would\s+like)\s+to\s+know\s+more\b/,
+        /\bknow\s+more\b/
+    ];
+
+    return intentPatterns.some((re) => re.test(msg));
+}
+
 async function sendChatOut() {
     const inp = document.getElementById('chat-input-out');
     const text = inp.value.trim();
@@ -1484,7 +1540,8 @@ async function sendChatOut() {
         appendMsg('ai', reply);
         playgroundHistory.push({ role: 'assistant', content: reply });
 
-        if (data.needs_callback) {
+        const userWantsCallback = shouldShowOutboundCollectPanel(text);
+        if (userWantsCallback) {
             document.getElementById('collect-panel-out').style.display = 'block';
             document.getElementById('chat-input-row-out').style.display = 'none';
         }
@@ -1499,7 +1556,7 @@ function resetChat() {
         <div class="chat-msg ai">
             <div class="c-av ai">R</div>
             <div>
-                <div class="c-bub">Hi! I'm Roo 🦉, your assistant for Sweet Root. How can I help you today?</div>
+                <div class="c-bub">Hi! I'm Roo 🦉, your assistant for ${escapeHtml(currentBusinessName)}. How can I help you today?</div>
                 <div class="c-time">Roo · just now</div>
             </div>
         </div>
@@ -1693,3 +1750,4 @@ async function loadBusinessesList() {
 </script>
 </body>
 </html>
+

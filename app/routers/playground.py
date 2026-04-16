@@ -179,7 +179,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     business_id: str
     message: str
-    history: Optional[list[ChatMessage]] = None
+    history: Optional[list] = None
 
 
 @router.post("/chat")
@@ -205,11 +205,20 @@ async def playground_chat(req: ChatRequest):
         "services": str(business.get("services") or ""),
         "fallback_number": str(business.get("fallback_number") or ""),
     }
-    system_prompt = prompt_builder.build_system_prompt(shared_prompt, business_dict, is_outbound=True)
+    # Pass an explicit extra_vars so build_system_prompt signature remains stable
+    system_prompt = prompt_builder.build_system_prompt(shared_prompt, business_dict, is_outbound=True, extra_vars={})
 
     messages = [{"role": "system", "content": system_prompt}]
     for h in (req.history or []):
-        messages.append({"role": h.role, "content": h.content})
+        if isinstance(h, dict):
+            role = h.get("role")
+            content = h.get("content")
+        else:
+            role = getattr(h, "role", None)
+            content = getattr(h, "content", None)
+
+        if role and content is not None:
+            messages.append({"role": str(role), "content": str(content)})
     messages.append({"role": "user", "content": req.message})
 
     response = groq_service.client.chat.completions.create(
@@ -346,14 +355,14 @@ The message should:
 - Reference the previous chat conversation
 - Be warm and helpful
 - Keep it under 20 words
-- Use {customer_name} and {business_name} placeholders
+- Use {{customer_name}} and {{business_name}} placeholders
 
 Current message:
 {current}
 
 Business: {biz}
 
-Return ONLY the improved message with {customer_name} and {business_name} placeholders preserved.""".format(
+Return ONLY the improved message with {{customer_name}} and {{business_name}} placeholders preserved.""".format(
             current=req.current_message, biz=req.business_name
         )
     else:

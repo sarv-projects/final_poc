@@ -94,7 +94,7 @@ async def slack_oauth_callback(request: Request):
     return HTMLResponse("<h1>Slack Connected! You can close this window.</h1>")
 
 
-@router.post("/webhook/nango")
+@router.post("/webhook/slack")
 async def nango_webhook(request: Request):
     """Handle Nango auth webhooks and finalize workspace metadata."""
     raw_body = await request.body()

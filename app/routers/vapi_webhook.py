@@ -200,7 +200,7 @@ async def handle_assistant_request(payload: dict) -> dict:
         }
     }
 
-
+##check sthis again
 async def handle_transcript(payload: dict) -> dict:
     """Handle transcript events for live streaming to Slack."""
     call_id = payload.get("call", {}).get("id") or payload.get("message", {}).get("call", {}).get("id")

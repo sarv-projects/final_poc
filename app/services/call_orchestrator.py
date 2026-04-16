@@ -34,8 +34,17 @@ async def trigger_outbound_callback(
         "services": business.get("services"),
         "fallback_number": business.get("fallback_number"),
     }
+
+    # Provide runtime variables (customer name / chat summary) to server-side rendering
+    extra_vars = {
+        "customerName": customer_name,
+        "customer_name": customer_name,
+        "chatSummary": chat_summary,
+        "chat_summary": chat_summary,
+    }
+
     system_prompt = prompt_builder.build_system_prompt(
-        shared_prompt, business_dict, is_outbound=True
+        shared_prompt, business_dict, is_outbound=True, extra_vars=extra_vars
     )
 
     # Append chat history if enabled
@@ -56,11 +65,32 @@ async def trigger_outbound_callback(
     )
 
     # Build assistant config
+    # Provide variableValues in multiple common key formats so dashboard assistants
+    # (which may expect camelCase) and server-side renderers (which expect
+    # snake_case or specific keys) both receive the data. This prevents gaps
+    # where the assistant doesn't know the customer's name or business fields
+    # and asks the caller to repeat information.
     assistant_config = {
         "firstMessage": first_message,
         "variableValues": {
-            **business_dict,
+            # snake_case (used by some templates / server-side builders)
+            "display_name": business.get("display_name"),
+            "city": business.get("city"),
+            "hours": business.get("hours"),
+            "services": business.get("services"),
+            "fallback_number": business.get("fallback_number"),
+
+            # camelCase / human-friendly names (commonly used in VAPI dashboard)
+            "businessName": business.get("display_name"),
+            "cityName": business.get("city"),
+            "fallbackNumber": business.get("fallback_number"),
+
+            # customer identifiers (provide both variants)
+            "customer_name": customer_name,
             "customerName": customer_name,
+
+            # chat summary / context
+            "chat_summary": chat_summary,
             "chatSummary": chat_summary,
         },
     }
