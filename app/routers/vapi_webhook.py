@@ -107,7 +107,7 @@ async def handle_assistant_request(payload: dict) -> dict:
         "fallback_number": business.get("fallback_number", ""),
     }
     system_prompt = prompt_builder.build_system_prompt(
-        shared_prompt, business_dict, is_outbound=False
+        shared_prompt, business_dict, is_outbound=False #Triggers inbound logic.
     )
 
     first_message = prompt_builder.render(
@@ -518,6 +518,7 @@ Decision must be "yes" or "no" only. Nothing else."""
     if not owner_assistant_id:
         print("WARNING: VAPI_OWNER_ASSISTANT_ID not set — skipping Owner PA call")
     else:
+        resp = None
         try:
             # Fire Owner PA call via VAPI API
             # VAPI requires systemPrompt to be inside model.messages, not as a top-level override
@@ -569,7 +570,7 @@ Decision must be "yes" or "no" only. Nothing else."""
                     print(f"Owner PA call triggered: {owner_call_id} → customer: {customer_call_id}")
         except Exception as e:
             print(f"Owner PA call failed: {e}")
-            print(f"📞 DEBUG: Response Text: {resp.text}") # 
+            print(f"📞 DEBUG: Response Text: {getattr(resp, 'text', '<no response>')}")
 
     # ── SECONDARY: Send Slack notification with approve/decline buttons ─
     if business.get("nango_connection_id") and business.get("slack_live_channel"):

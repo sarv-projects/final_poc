@@ -20,11 +20,7 @@ class PromptBuilder:
         is_outbound: bool = False,
         extra_vars: dict | None = None,
     ) -> str:
-        """Build the final system prompt for a call.
-
-        extra_vars: optional dict of additional variables (e.g. customerName, chatSummary)
-        that should be substituted into the shared_template when rendering server-side.
-        """
+        """Build the final system prompt for a call."""
         variables = {
             "agentName": "Ananya",
             "businessName": business.get("display_name", ""),
@@ -35,14 +31,29 @@ class PromptBuilder:
             "chatContext": " (from chat context)" if is_outbound else "",
         }
 
-        # Merge any extra variables provided by the caller. This lets callers
-        # inject runtime values like customerName or chatSummary so server-side
-        # rendering includes them (avoids asking the caller to repeat).
+        # Merge extra vars
         if extra_vars:
             for k, v in extra_vars.items():
                 variables[k] = v
 
-        return self.render(shared_template, variables)
+        # 1. Render the base template
+        rendered_prompt = self.render(shared_template, variables)
+
+        # 2. Append Context-Specific Instructions (CRITICAL FIX)
+        if is_outbound:
+            rendered_prompt += "\n\n[OUTBOUND CALLBACK CONTEXT]\n"
+            rendered_prompt += "- You are calling the customer BACK after they requested it in chat.\n"
+            rendered_prompt += "- You ALREADY know their name and issue from the chat history.\n"
+            rendered_prompt += "- Do NOT ask for their name again unless they don't answer.\n"
+            rendered_prompt += "- Start by referencing the previous chat briefly.\n"
+        else:
+            rendered_prompt += "\n\n[INBOUND CALL CONTEXT]\n"
+            rendered_prompt += "- You are ANSWERING an incoming phone call from a customer.\n"
+            rendered_prompt += "- The customer dialed your business number directly.\n"
+            rendered_prompt += "- Do NOT mention 'chat' or 'previous conversation' unless the customer brings it up.\n"
+            rendered_prompt += "- Start with your welcome message and ask how you can help.\n"
+
+        return rendered_prompt
 
     def build_welcome_message(
         self,

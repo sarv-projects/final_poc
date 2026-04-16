@@ -233,5 +233,14 @@
     "customer_name": "Sarv",
     "id": "fe66095c-57dd-4087-aafa-b01b276a8800",
     "created_at": "2026-04-16T07:51:57.857459"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d9565-faf0-7000-8972-4b682533d183",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarv",
+    "id": "0922a61d-4c96-4b45-aa4a-7e8189d35216",
+    "created_at": "2026-04-16T08:26:20.019737"
   }
 ]
