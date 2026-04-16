@@ -266,7 +266,22 @@ async def handle_end_of_call_report(payload: dict) -> dict:
     else:
         outcome = "abandoned"
 
+    # Use VAPI transcript if available, otherwise fall back to accumulated transcript
     final_transcript = transcript or call_log.get("transcript", "")
+    
+    # Clean up transcript: remove timestamp-only lines and normalize
+    if final_transcript:
+        lines = final_transcript.split("\n")
+        cleaned_lines = []
+        for line in lines:
+            stripped = line.strip()
+            # Skip empty lines and timestamp-only lines (e.g., "13:22", "1:22:15 PM(+00:01.66)")
+            if stripped and not (len(stripped) < 6 and stripped.replace(":", "").replace(".", "").isdigit()):
+                # Also skip lines that are just "Customer ended the call" metadata
+                if "ended the call" not in stripped.lower():
+                    cleaned_lines.append(stripped)
+        final_transcript = "\n".join(cleaned_lines).strip()
+    
     summary = groq_service.summarize_transcript(
         final_transcript, call_log.get("call_type", "inbound")
     )

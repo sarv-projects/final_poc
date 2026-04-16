@@ -1,6 +1,7 @@
 """Playground endpoints for testing calls and seeding demo data."""
 
 from typing import Optional
+import re
 
 import httpx
 from fastapi import APIRouter, HTTPException
@@ -35,6 +36,25 @@ DEMO_BUSINESS_NAME = "Sweet Root – Toys & Memories"
 
 def _seed_fallback_number() -> str:
     return settings.BUSINESS_FALLBACK_NUMBER or settings.BUSINESS_PHONE_NUMBER
+
+
+_TOOL_CALL_PATTERNS = [
+    re.compile(r"\bnotify_owner\s*\([^)]*\)", re.IGNORECASE),
+    re.compile(r"\bend_call_tool\s*\([^)]*\)", re.IGNORECASE),
+    re.compile(r"\btransfer_call_tool\s*\([^)]*\)", re.IGNORECASE),
+    re.compile(r"\bsearch_knowledge_base\s*\([^)]*\)", re.IGNORECASE),
+]
+
+
+def _sanitize_playground_reply(reply: str) -> str:
+    cleaned = reply or ""
+    for pattern in _TOOL_CALL_PATTERNS:
+        cleaned = pattern.sub("", cleaned)
+
+    cleaned = re.sub(r"\(\s*\)", "", cleaned)
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 @router.post("/seed")
@@ -228,13 +248,19 @@ async def playground_chat(req: ChatRequest):
         max_tokens=200,
     )
     reply = response.choices[0].message.content or "I'm not sure how to help with that."
+    reply = _sanitize_playground_reply(reply) or "I'm here to help. Could you share a little more about what you need?"
 
     # Detect callback triggers
     triggers = ["callback", "book", "call you", "speak with", "contact", "team", "schedule"]
     source_text = f"{req.message.lower()} {reply.lower()}"
     needs_callback = any(t in source_text for t in triggers)
 
-    return {"reply": reply, "needs_callback": needs_callback}
+    # Generate chat summary from history for callback context
+    chat_summary = ""
+    if needs_callback and (req.history or []):
+        chat_summary = groq_service.summarize_chat_history(req.history)
+
+    return {"reply": reply, "needs_callback": needs_callback, "chat_summary": chat_summary}
 
 
 @router.get("/analytics/{business_id}")

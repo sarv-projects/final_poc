@@ -2120,7 +2120,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     business_id: str
     message: str
-    history: Optional[list[ChatMessage]] = None
+    history: Optional[list] = None
 
 
 @router.post("/chat")
@@ -2146,11 +2146,20 @@ async def playground_chat(req: ChatRequest):
         "services": str(business.get("services") or ""),
         "fallback_number": str(business.get("fallback_number") or ""),
     }
-    system_prompt = prompt_builder.build_system_prompt(shared_prompt, business_dict, is_outbound=True)
+    # Pass an explicit extra_vars so build_system_prompt signature remains stable
+    system_prompt = prompt_builder.build_system_prompt(shared_prompt, business_dict, is_outbound=True, extra_vars={})
 
     messages = [{"role": "system", "content": system_prompt}]
     for h in (req.history or []):
-        messages.append({"role": h.role, "content": h.content})
+        if isinstance(h, dict):
+            role = h.get("role")
+            content = h.get("content")
+        else:
+            role = getattr(h, "role", None)
+            content = getattr(h, "content", None)
+
+        if role and content is not None:
+            messages.append({"role": str(role), "content": str(content)})
     messages.append({"role": "user", "content": req.message})
 
     response = groq_service.client.chat.completions.create(
@@ -2287,14 +2296,14 @@ The message should:
 - Reference the previous chat conversation
 - Be warm and helpful
 - Keep it under 20 words
-- Use {customer_name} and {business_name} placeholders
+- Use {{customer_name}} and {{business_name}} placeholders
 
 Current message:
 {current}
 
 Business: {biz}
 
-Return ONLY the improved message with {customer_name} and {business_name} placeholders preserved.""".format(
+Return ONLY the improved message with {{customer_name}} and {{business_name}} placeholders preserved.""".format(
             current=req.current_message, biz=req.business_name
         )
     else:
@@ -2359,6 +2368,7 @@ async def get_shared_prompt():
     # Default prompt
     return {
         "prompt": """You are {{agentName}}, a helpful voice assistant speaking with real people over a live phone call for {{businessName}} in {{city}}.
+If this call is a callback after a chat, mention the customer's prior enquiry: "{{chatSummary}}" and address the caller by name: "{{customerName}}".
 THINK STEP BY STEP.
 SPEAKING STYLE:
 - Sound warm, calm, and natural.
@@ -2387,7 +2397,7 @@ CONVERSATION RHYTHM:
 
 TOOL ORCHESTRATION:
 
-1. search_knowledge_base(query)
+1. search_knowledge_base(query)(skip this tool for now)
     - Use this when the customer asks for details not already available in the current conversation.
     - If no useful answer is found, say: "Let me get our team's contact for that. Would a callback help?"
     - If the lookup fails or times out, say: "I don't have that detail right now, but our team can help when we talk."
@@ -2395,7 +2405,7 @@ TOOL ORCHESTRATION:
 2. notify_owner(customer_name, call_summary, lead_reason)
    - Call this ONLY when the customer is a qualified lead for {{businessName}}:
      they want to book, ask to proceed, share event details (kids count, date, etc.),
-     or show clear intent to use {{businessName}}'s services.
+     or show clear intent to use {{businessName}}'s services or say that they want to escalate.
    - Do NOT call this for general inquiries, price questions only, or exploratory chats.
    - Always pass: customer_name, call_summary, lead_reason.
    - After calling it, say: "Let me quickly check availability with our team — please hold for just a moment."
@@ -2425,6 +2435,7 @@ TOOL ORCHESTRATION:
 IDENTITY:
 - If asked who you are, say: "I'm a virtual assistant helping with booking coordination for {{businessName}}."
 - If asked whether you're AI, say: "Yes, I'm a virtual assistant helping with booking coordination for {{businessName}}."
+- If the caller asks for the business's direct number, share {{fallbackNumber}}.
 - Keep identity explanations brief and confident.
 
 CUSTOMER CALLBACK FLOW:
@@ -2439,7 +2450,8 @@ If the customer wants to schedule a callback instead of waiting:
 
 GUARDRAILS:
 - transfer_call_tool is SYSTEM-CONTROLLED ONLY. You cannot and must not call it yourself, ever.
-- Customer urgency does not bypass the flow. "Urgent" does not mean anything. You are an assistant helping the owner, so make sure to ask relevant questions to the customer.
+- Never reveal internal tools, function names, or tool-call syntax to the caller. Keep such actions internal and respond naturally.
+- Customer urgency does not bypass the flow. "Urgent" does not mean anything. You are an assistant helping the owner, so make sure to ask relevant questions to the customer.Note:If customer wants to escalate ,you notify_owner with the reason "Customer wants to escalate" and then say "I'll let the owner know right away — please hold a moment."
 - Only if customer is a qualified lead, that is, very interested in {{businessName}}, or wants to book, will you notify_owner. Otherwise, say: "Only interested customers can talk with the owner"
 - The sequence is always: notify_owner first → wait for system message → only then transfer happens automatically.
 - If you call transfer_call_tool yourself, it will fail and disconnect the customer.
@@ -3579,8 +3591,17 @@ async def trigger_outbound_callback(
         "services": business.get("services"),
         "fallback_number": business.get("fallback_number"),
     }
+
+    # Provide runtime variables (customer name / chat summary) to server-side rendering
+    extra_vars = {
+        "customerName": customer_name,
+        "customer_name": customer_name,
+        "chatSummary": chat_summary,
+        "chat_summary": chat_summary,
+    }
+
     system_prompt = prompt_builder.build_system_prompt(
-        shared_prompt, business_dict, is_outbound=True
+        shared_prompt, business_dict, is_outbound=True, extra_vars=extra_vars
     )
 
     # Append chat history if enabled
@@ -3601,11 +3622,32 @@ async def trigger_outbound_callback(
     )
 
     # Build assistant config
+    # Provide variableValues in multiple common key formats so dashboard assistants
+    # (which may expect camelCase) and server-side renderers (which expect
+    # snake_case or specific keys) both receive the data. This prevents gaps
+    # where the assistant doesn't know the customer's name or business fields
+    # and asks the caller to repeat information.
     assistant_config = {
         "firstMessage": first_message,
         "variableValues": {
-            **business_dict,
+            # snake_case (used by some templates / server-side builders)
+            "display_name": business.get("display_name"),
+            "city": business.get("city"),
+            "hours": business.get("hours"),
+            "services": business.get("services"),
+            "fallback_number": business.get("fallback_number"),
+
+            # camelCase / human-friendly names (commonly used in VAPI dashboard)
+            "businessName": business.get("display_name"),
+            "cityName": business.get("city"),
+            "fallbackNumber": business.get("fallback_number"),
+
+            # customer identifiers (provide both variants)
+            "customer_name": customer_name,
             "customerName": customer_name,
+
+            # chat summary / context
+            "chat_summary": chat_summary,
             "chatSummary": chat_summary,
         },
     }
@@ -3845,8 +3887,13 @@ class PromptBuilder:
         shared_template: str,
         business: dict,
         is_outbound: bool = False,
+        extra_vars: dict | None = None,
     ) -> str:
-        """Build the final system prompt for a call."""
+        """Build the final system prompt for a call.
+
+        extra_vars: optional dict of additional variables (e.g. customerName, chatSummary)
+        that should be substituted into the shared_template when rendering server-side.
+        """
         variables = {
             "agentName": "Ananya",
             "businessName": business.get("display_name", ""),
@@ -3856,6 +3903,14 @@ class PromptBuilder:
             "fallbackNumber": business.get("fallback_number", ""),
             "chatContext": " (from chat context)" if is_outbound else "",
         }
+
+        # Merge any extra variables provided by the caller. This lets callers
+        # inject runtime values like customerName or chatSummary so server-side
+        # rendering includes them (avoids asking the caller to repeat).
+        if extra_vars:
+            for k, v in extra_vars.items():
+                variables[k] = v
+
         return self.render(shared_template, variables)
 
     def build_welcome_message(
@@ -4475,8 +4530,6 @@ else:
 
 --- alembic/script.py.mako ---
 
---- alembic/versions/.keep ---
-
 --- alembic/versions/001_initial_schema.py ---
 """Initial schema
 
@@ -5056,8 +5109,8 @@ textarea{min-height:90px;line-height:1.6}
 .s-orange{background:var(--orange-light);color:var(--orange)}
 .s-red{background:var(--red-light);color:var(--red)}
 .s-gray{background:var(--bg);color:var(--text-2)}
-.s-blue{background:var(--teal-light);color:var(--teal)}
-.s-purple{background:var(--purple-light);color:var(--purple)}
+.s-blue{background:var(--teal-light);color:var,--teal)}
+.s-purple{background:var(--purple-light);color:var,--purple)}
 
 /* PLAYGROUND */
 .pg-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
@@ -5116,7 +5169,7 @@ textarea{min-height:90px;line-height:1.6}
 .tr-bub{max-width:84%;padding:7px 12px;border-radius:12px;font-size:12.5px;line-height:1.5}
 .ai .tr-bub{background:var(--accent-light);color:var(--text);border-top-left-radius:3px}
 .cu .tr-bub{background:#e9e9f0;color:var(--text);border-top-right-radius:3px}
-.ow .tr-bub{background:var(--green-light);color:var(--text);border-top-left-radius:3px}
+.ow .tr-bub{background:var(--green-light);color:var,--text);border-top-left-radius:3px}
 .tr-lbl{font-size:10.5px;color:var(--text-3);margin-top:3px}
 .whisper-msg{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 12px;font-size:12px;color:#92400e;display:flex;align-items:flex-start;gap:8px;margin:4px 0}
 .call-actions{padding:11px 14px;display:flex;align-items:center;justify-content:center;gap:10px;border-top:1px solid var(--border);background:var(--card)}
@@ -5370,7 +5423,7 @@ textarea{min-height:90px;line-height:1.6}
             <label style="margin:0">Message</label>
             <button class="ai-gen-btn" onclick="generateWelcome('outbound')">✨ AI Generate</button>
           </div>
-          <textarea id="outbound-welcome">Hi {customer_name}, this is Roo calling from {business_name}! I was just speaking with you on our chat. I'm here to help you further. How can I assist you today?</textarea>
+          <textarea id="outbound-welcome">Hi {customer_name}, this is Roo calling from {business_name}! I was just speaking with you on our chat  regarding your enquiry about {chat_summary}. I'm here to help you further. How can I assist you today?</textarea>
           <div class="hint">Variables: {customer_name}, {business_name}, {chat_summary}</div>
           <div class="form-group" style="margin-bottom:0;margin-top:12px">
             <label>Max Call Duration</label>
@@ -6399,6 +6452,23 @@ async function previewVoice(event, voiceId, voiceName) {
     }
 }
 
+function shouldShowOutboundCollectPanel(userText) {
+    const msg = (userText || '').toLowerCase().trim();
+    if (!msg) return false;
+
+    // Trigger only for explicit escalation/callback intent.
+    const intentPatterns = [
+        /\bchat\s+more\b/,
+        /\bcall\b/,
+        /\bcallback\b/,
+        /\bbook(?:ing)?\b/,
+        /\b(?:want|wanna|would\s+like)\s+to\s+know\s+more\b/,
+        /\bknow\s+more\b/
+    ];
+
+    return intentPatterns.some((re) => re.test(msg));
+}
+
 async function sendChatOut() {
     const inp = document.getElementById('chat-input-out');
     const text = inp.value.trim();
@@ -6430,7 +6500,8 @@ async function sendChatOut() {
         appendMsg('ai', reply);
         playgroundHistory.push({ role: 'assistant', content: reply });
 
-        if (data.needs_callback) {
+        const userWantsCallback = shouldShowOutboundCollectPanel(text);
+        if (userWantsCallback) {
             document.getElementById('collect-panel-out').style.display = 'block';
             document.getElementById('chat-input-row-out').style.display = 'none';
         }
@@ -12773,12 +12844,12 @@ Package with .env.example, README.md, and demo script.
     "services": "Wooden toys, birthday parties, creative play sessions, memory quilts",
     "fallback_number": "+919611896916",
     "voice_id": "pMsXgVXv3BLzUgSXRplE",
-    "outbound_welcome_template": "Hi {customer_name}, this is Roo calling from {business_name}! I was just speaking with you on our chat. How can I assist you today?",
+    "outbound_welcome_template": "Hi {customer_name}, this is Roo calling from {business_name}! I was just speaking with you on our chat  regarding your enquiry about {chat_summary}. I'm here to help you further. How can I assist you today?",
     "inbound_welcome_template": "Thank you for calling {{businessName}}! I'm Roo, your AI assistant. How can I help you today?",
     "callback_trigger_phrase": "Would you like us to call you back for a more detailed discussion?",
     "id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
     "created_at": "2026-04-13T16:54:58.302595",
-    "updated_at": "2026-04-16T05:58:37.324094",
+    "updated_at": "2026-04-16T07:03:30.758581",
     "nango_connection_id": "9001ba29-c7e6-5c39-ab8a-d98a34752674",
     "slack_access_token": "",
     "slack_workspace_name": "",
@@ -12987,13 +13058,40 @@ Package with .env.example, README.md, and demo script.
     "customer_name": "Sarv",
     "id": "8e9ea0e4-45b7-4b5e-b0b5-ac82de07617c",
     "created_at": "2026-04-16T05:51:05.019121"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d94fc-6472-7ff0-be90-99a5167ff620",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarv",
+    "id": "2d04d9d2-2a10-4222-a911-5f54a44d532c",
+    "created_at": "2026-04-16T06:31:02.066898"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d94fe-0206-7ddc-b980-4c431894d377",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarv",
+    "id": "bbe7631c-7b77-4a82-a97c-15602744f04d",
+    "created_at": "2026-04-16T06:32:47.894239"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019d951a-2738-777f-a43b-bff29a214e6f",
+    "customer_phone": "+919731737460",
+    "customer_name": "Sarv",
+    "id": "e185db9d-d209-49e0-a5df-e4f754a42c04",
+    "created_at": "2026-04-16T07:03:31.160222"
   }
 ]
 ===== data/prompts.json =====
 {
   "993267f5-7ad2-480e-84bb-de7ac7f2e449": {
     "name": "default",
-    "shared_system_prompt": "You are {{agentName}}, a helpful voice assistant speaking with real people over a live phone call for {{businessName}} in {{city}}.\nTHINK STEP BY STEP.\nSPEAKING STYLE:\n- Sound warm, calm, and natural.\n- Keep responses short enough for voice — not abrupt, but never rambling.\n- Use light acknowledgments like \"Got it\", \"Makes sense\", or \"Sure\" when appropriate.\n- Mirror the caller's tone: reassuring when confused, upbeat when interested, calm when frustrated.\n- Never match an angry or rude tone. Stay composed and warm regardless.\nHOW TO SPEAK NUMBERS:\n- Say numbers naturally in words. Example: 399 → \"three hundred ninety nine\".\n- Say amounts naturally. Example: 3990 → \"three thousand nine hundred ninety\".\n- Do not say currency symbols.\n- Do not read normal amounts digit-by-digit.\nHOW TO SPEAK PHONE NUMBERS:\n- Speak phone numbers digit by digit with natural pauses.\n- Example: \"nine eight seven, six five four, three two one zero\".\nCONVERSATION RHYTHM:\n- Ask one question at a time.\n- Wait for the customer to finish before asking the next thing.\n- If they pause, give them a moment before jumping in.\n- Do not repeat the same question more than twice.\nTOOL ORCHESTRATION:\n1. search_knowledge_base(query)\n    - Use this when the customer asks for details not already available in the current conversation.\n    - If no useful answer is found, say: \"Let me get our team's contact for that. Would a callback help?\"\n    - If the lookup fails or times out, say: \"I don't have that detail right now, but our team can help when we talk.\"\n2. notify_owner(customer_name, call_summary, lead_reason)\n   - Call this ONLY when the customer is a qualified lead for {{businessName}}:\n     they want to book, ask to proceed, share event details (kids count, date, etc.),\n     or show clear intent to use {{businessName}}'s services.\n   - Do NOT call this for general inquiries, price questions only, or exploratory chats.\n   - Always pass: customer_name, call_summary, lead_reason.\n   - After calling it, say: \"Let me quickly check availability with our team — please hold for just a moment.\"\n   - If notify_owner does not get a system response within ~15 seconds, say:\n     \"I'm having a little trouble reaching the team right now. Can I ask someone call you back?\"\n     Then end_call_tool.\n3. transfer_call_tool\n    - You do NOT have a transfer tool. You CANNOT transfer calls yourself under any circumstance.\n   - Transfer happens AUTOMATICALLY when the system confirms the owner is available.\n   - Your only job is to notify_owner → wait → the system handles transfer if the owner picks up.\n   - If the customer says \"urgent\", \"transfer me now\", or \"connect me immediately\":\n     Do NOT attempt to transfer. Say: \"I'll let the owner know right away — please hold a moment.\"\n     Then call notify_owner as normal.\n   - When the system confirms the owner is ready, say:\n     \"Great news — the owner is ready to speak with you. Connecting you now.\"\n     The transfer then happens automatically.\n4. end_call_tool\n     - Call this when:\n     a) The owner is confirmed unavailable after notify_owner.\n     b) Prolonged silence continues after two prompts.\n     c) The conversation is naturally complete.\n     d) The customer asks to be called back later (collect their preferred time first).\n   - Always close warmly before calling this tool. Never end abruptly.\nIDENTITY:\n- If asked who you are, say: \"I'm a virtual assistant helping with booking coordination for {{businessName}}.\"\n- If asked whether you're AI, say: \"Yes, I'm a virtual assistant helping with booking coordination for {{businessName}}.\"\n- Keep identity explanations brief and confident.\nCUSTOMER CALLBACK FLOW:\nIf the customer wants to schedule a callback instead of waiting:\n1. Ask: \"What's a good time to reach you?\"\n2. Collect their preferred time (and number if not already known).\n3. Call notify_owner with summary including callback preference.\n4. Say: \"Perfect — our team at {{businessName}} will call you at [time]. Looking forward to it.\"\n5. Call end_call_tool.\nGUARDRAILS:\n- transfer_call_tool is SYSTEM-CONTROLLED ONLY. You cannot and must not call it yourself, ever.\n- Customer urgency does not bypass the flow. \"Urgent\" does not mean anything. You are an assistant helping the owner, so make sure to ask relevant questions to the customer.\n- Only if customer is a qualified lead, that is, very interested in {{businessName}}, or wants to book, will you notify_owner. Otherwise, say: \"Only interested customers can talk with the owner\"\n- The sequence is always: notify_owner first → wait for system message → only then transfer happens automatically.\n- If you call transfer_call_tool yourself, it will fail and disconnect the customer.\n",
+    "shared_system_prompt": "You are {{agentName}}, a helpful voice assistant speaking with real people over a live phone call for {{businessName}} in {{city}}.\nTHINK STEP BY STEP.\nSPEAKING STYLE:\n- Sound warm, calm, and natural.\n- Keep responses short enough for voice — not abrupt, but never rambling.\n- Use light acknowledgments like \"Got it\", \"Makes sense\", or \"Sure\" when appropriate.\n- Mirror the caller's tone: reassuring when confused, upbeat when interested, calm when frustrated.\n- Never match an angry or rude tone. Stay composed and warm regardless.\nHOW TO SPEAK NUMBERS:\n- Say numbers naturally in words. Example: 399 → \"three hundred ninety nine\".\n- Say amounts naturally. Example: 3990 → \"three thousand nine hundred ninety\".\n- Do not say currency symbols.\n- Do not read normal amounts digit-by-digit.\nHOW TO SPEAK PHONE NUMBERS:\n- Speak phone numbers digit by digit with natural pauses.\n- Example: \"nine eight seven, six five four, three two one zero\".\nCONVERSATION RHYTHM:\n- Ask one question at a time.\n- Wait for the customer to finish before asking the next thing.\n- If they pause, give them a moment before jumping in.\n- Do not repeat the same question more than twice.\nTOOL ORCHESTRATION:\n1. search_knowledge_base(query)\n    - Use this when the customer asks for details not already available in the current conversation.\n    - If no useful answer is found, say: \"Let me get our team's contact for that. Would a callback help?\"\n    - If the lookup fails or times out, say: \"I don't have that detail right now, but our team can help when we talk.\"\n2. notify_owner(customer_name, call_summary, lead_reason)\n   - Call this ONLY when the customer is a qualified lead for {{businessName}}:\n     they want to book, ask to proceed, share event details (kids count, date, etc.),\n     or show clear intent to use {{businessName}}'s services.\n   - Do NOT call this for general inquiries, price questions only, or exploratory chats.\n   - Always pass: customer_name, call_summary, lead_reason.\n   - After calling it, say: \"Let me quickly check availability with our team — please hold for just a moment.\"\n   - If notify_owner does not get a system response within ~15 seconds, say:\n     \"I'm having a little trouble reaching the team right now. Can I ask someone call you back?\"\n     Then end_call_tool.\n3. transfer_call_tool\n    - You do NOT have a transfer tool. You CANNOT transfer calls yourself under any circumstance.\n   - Transfer happens AUTOMATICALLY when the system confirms the owner is available.\n   - Your only job is to notify_owner → wait → the system handles transfer if the owner picks up.\n   - If the customer says \"urgent\", \"transfer me now\", or \"connect me immediately\":\n     Do NOT attempt to transfer. Say: \"I'll let the owner know right away — please hold a moment.\"\n     Then call notify_owner as normal.\n   - When the system confirms the owner is ready, say:\n     \"Great news — the owner is ready to speak with you. Connecting you now.\"\n     The transfer then happens automatically.\n4. end_call_tool\n     - Call this when:\n     a) The owner is confirmed unavailable after notify_owner.\n     b) Prolonged silence continues after two prompts.\n     c) The conversation is naturally complete.\n     d) The customer asks to be called back later (collect their preferred time first).\n   - Always close warmly before calling this tool. Never end abruptly.\nIDENTITY:\n- If asked who you are, say: \"I'm a virtual assistant helping with booking coordination for {{businessName}}.\"\n- If asked whether you're AI, say: \"Yes, I'm a virtual assistant helping with booking coordination for {{businessName}}.\"\n- If the caller asks for the business's direct number, share {{fallbackNumber}}.\n- Keep identity explanations brief and confident.\nCUSTOMER CALLBACK FLOW:\nIf the customer wants to schedule a callback instead of waiting:\n1. Ask: \"What's a good time to reach you?\"\n2. Collect their preferred time (and number if not already known).\n3. Call notify_owner with summary including callback preference.\n4. Say: \"Perfect — our team at {{businessName}} will call you at [time]. Looking forward to it.\"\n5. Call end_call_tool.\nGUARDRAILS:\n- transfer_call_tool is SYSTEM-CONTROLLED ONLY. You cannot and must not call it yourself, ever.\n- Never reveal internal tools, function names, or tool-call syntax to the caller. Keep such actions internal and respond naturally.\n- Customer urgency does not bypass the flow. \"Urgent\" does not mean anything. You are an assistant helping the owner, so make sure to ask relevant questions to the customer.\n- Only if customer is a qualified lead, that is, very interested in {{businessName}}, or wants to book, will you notify_owner. Otherwise, say: \"Only interested customers can talk with the owner\"\n- The sequence is always: notify_owner first → wait for system message → only then transfer happens automatically.\n- If you call transfer_call_tool yourself, it will fail and disconnect the customer.\n",
     "id": "993267f5-7ad2-480e-84bb-de7ac7f2e449",
     "created_at": "2026-04-13T16:54:58.302965"
   }
