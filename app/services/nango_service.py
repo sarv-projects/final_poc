@@ -56,6 +56,14 @@ class NangoService:
             resp.raise_for_status()
             return resp.json()
 
+    async def get_connection(self, connection_id: str) -> dict:
+        """Fetch Nango connection details for a connection ID (may include tokens/credentials)."""
+        url = f"{self.base_url}/connections/{connection_id}"
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.get(url, headers=self.headers)
+            resp.raise_for_status()
+            return resp.json()
+
     async def list_channels(self, connection_id: str) -> list:
         """List Slack channels for a connected workspace."""
         try:

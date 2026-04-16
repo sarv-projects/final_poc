@@ -150,7 +150,31 @@ async def nango_webhook(request: Request):
         or "Slack"
     )
 
+    # Persist workspace name to a stable key and keep backward compatibility
     business["slack_workspace"] = workspace
+    business["slack_workspace_name"] = workspace
+
+    # Try to fetch Nango connection details (may include access tokens/credentials)
+    try:
+        conn_info = await nango_client.get_connection(str(connection_uuid))
+        data = {}
+        if isinstance(conn_info, dict):
+            # Nango responses might place tokens under 'data' or 'credentials'
+            data = conn_info.get("data") or conn_info.get("credentials") or {}
+        # Try common token field names
+        token = (
+            (data.get("access_token") if isinstance(data, dict) else None)
+            or (data.get("oauth_token") if isinstance(data, dict) else None)
+            or (data.get("token") if isinstance(data, dict) else None)
+            or (data.get("credentials", {}).get("access_token") if isinstance(data.get("credentials"), dict) else None)
+            or (data.get("oauth", {}).get("access_token") if isinstance(data.get("oauth"), dict) else None)
+        )
+        if token:
+            business["slack_access_token"] = token
+    except Exception:
+        # Don't fail webhook if fetching connection details fails; it's best-effort.
+        pass
+
     await json_storage.update_business(business["id"], business)
     return {"status": "ok", "business_id": str(business["id"]), "workspace": workspace}
 
