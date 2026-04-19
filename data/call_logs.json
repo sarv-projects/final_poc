@@ -242,5 +242,25 @@
     "customer_name": "Sarv",
     "id": "0922a61d-4c96-4b45-aa4a-7e8189d35216",
     "created_at": "2026-04-16T08:26:20.019737"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019da543-8e43-7001-a5cf-8eff63f5d080",
+    "customer_phone": "+919731737460",
+    "customer_name": "sarv",
+    "id": "d95458d9-9e99-411e-af21-287532b9acba",
+    "created_at": "2026-04-19T10:22:41.155855",
+    "transcript": "Assistant: Hi, sir. This is Drew calling from Troy World. I was just speaking with you on our chat regarding your inquiry about assistance. Hi. I'm Drew, uh, your assistant for Troy World.\nAssistant: How can I help you today?\nAssistant: Customer,\nAssistant: Hi.\nAssistant: assistant.\nAssistant: Hello.\nAssistant: can I assist you today?\nAssistant: Customer,\nAssistant: Pause. Call me.\nAssistant: assistant. You'd like me to call you back at a later time.\nAssistant: what's a good time to reach you?\nAssistant: I'm here to help you further.\nAssistant: How can I assist you today?"
+  },
+  {
+    "business_id": "8ea5a5e8-cce5-41dd-ad75-55f474d499f3",
+    "call_type": "outbound",
+    "vapi_call_id": "019da55e-f616-7001-8796-5e06f5b97eb9",
+    "customer_phone": "+919731737460",
+    "customer_name": "sarv",
+    "id": "261575f8-2aea-4c3d-a9f8-70f92e48c587",
+    "created_at": "2026-04-19T10:52:37.044923",
+    "transcript": "Assistant: Hi, Saav. This is Roo calling from Trival. I was just speaking with you on our chat regarding your inquiry about assistant. Hi. I'm Roo, your assistant for Trival. How can I help you today?\nAssistant: Customer, hi, assistant.\nAssistant: Hello.\nAssistant: can I assist you today?\nAssistant: customer call assistant. You'd like to make a call. What's the number you you would like to dial? I'm here to help you further. How can I assist you today?"
   }
 ]

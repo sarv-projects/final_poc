@@ -1,6 +1,6 @@
 """Playground endpoints for testing calls and seeding demo data."""
 
-from typing import Optional
+from typing import Optional, Any, cast
 import re
 
 import httpx
@@ -166,6 +166,7 @@ async def test_outbound(req: OutboundTestRequest):
         raise HTTPException(status_code=404, detail="Business not found")
 
     try:
+        # Trigger outbound callback (chat_summary provided separately)
         call = await trigger_outbound_callback(
             business=business,
             customer_name=req.customer_name,
@@ -243,7 +244,7 @@ async def playground_chat(req: ChatRequest):
 
     response = groq_service.client.chat.completions.create(
         model="llama-3.1-8b-instant",
-        messages=messages,
+        messages=cast(Any, messages),
         temperature=0.3,
         max_tokens=200,
     )
@@ -256,9 +257,44 @@ async def playground_chat(req: ChatRequest):
     needs_callback = any(t in source_text for t in triggers)
 
     # Generate chat summary from history for callback context
+    # Find this section in playground_chat function (lines 245-250):
+    # Generate chat summary from history for callback context
     chat_summary = ""
     if needs_callback and (req.history or []):
-        chat_summary = groq_service.summarize_chat_history(req.history)
+        # Build messages list for summarization
+        history_messages = []
+        for h in (req.history or []):
+            if isinstance(h, dict):
+                role = h.get("role")
+                content = h.get("content")
+            else:
+                role = getattr(h, "role", None)
+                content = getattr(h, "content", None)
+            if role and content:
+                prefix = "Customer:" if role == "user" else "Assistant:"
+                history_messages.append(f"{prefix} {content}")
+        
+        # Create summary prompt
+        summary_prompt = f"""Summarize this customer conversation in ONE sentence (max 15 words).
+Focus on what the customer wants. Be specific.
+
+Conversation:
+{chr(10).join(history_messages)}
+
+Summary:"""
+        
+        try:
+            summary_response = groq_service.client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=cast(Any, [{"role": "user", "content": summary_prompt}]),
+                temperature=0.3,
+                max_tokens=50,
+            )
+            summary_content = summary_response.choices[0].message.content
+            chat_summary = summary_content.strip() if summary_content else "Customer requested a callback about their inquiry."
+        except Exception as e:
+            print(f"Summary generation failed: {e}")
+            chat_summary = "Customer requested a callback about their inquiry."
 
     return {"reply": reply, "needs_callback": needs_callback, "chat_summary": chat_summary}
 
@@ -345,13 +381,13 @@ async def generate_system_prompt(req: GeneratePromptRequest):
     try:
         response = groq_service.client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[
+            messages=cast(Any, [
                 {
                     "role": "system",
                     "content": "You are an expert at structuring raw business notes into high-performance Voice AI System Prompts.",
                 },
                 {"role": "user", "content": improvement_prompt},
-            ],
+            ]),
             temperature=0.3,
             max_tokens=1000,
         )
@@ -412,13 +448,13 @@ Return ONLY the improved message with {{businessName}} placeholder preserved."""
     try:
         response = groq_service.client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[
+            messages=cast(Any, [
                 {
                     "role": "system",
                     "content": "You are an expert at crafting natural, friendly voice AI welcome messages.",
                 },
                 {"role": "user", "content": instruction},
-            ],
+            ]),
             temperature=0.5,
             max_tokens=100,
         )

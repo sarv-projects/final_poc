@@ -149,8 +149,8 @@ textarea{min-height:90px;line-height:1.6}
 .s-orange{background:var(--orange-light);color:var(--orange)}
 .s-red{background:var(--red-light);color:var(--red)}
 .s-gray{background:var(--bg);color:var(--text-2)}
-.s-blue{background:var(--teal-light);color:var,--teal)}
-.s-purple{background:var(--purple-light);color:var,--purple)}
+.s-blue{background:var(--teal-light);color:var(--teal)}
+.s-purple{background:var(--purple-light);color:var(--purple)}
 
 /* PLAYGROUND */
 .pg-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
@@ -209,7 +209,7 @@ textarea{min-height:90px;line-height:1.6}
 .tr-bub{max-width:84%;padding:7px 12px;border-radius:12px;font-size:12.5px;line-height:1.5}
 .ai .tr-bub{background:var(--accent-light);color:var(--text);border-top-left-radius:3px}
 .cu .tr-bub{background:#e9e9f0;color:var(--text);border-top-right-radius:3px}
-.ow .tr-bub{background:var(--green-light);color:var,--text);border-top-left-radius:3px}
+.ow .tr-bub{background:var(--green-light);color:var(--text);border-top-left-radius:3px}
 .tr-lbl{font-size:10.5px;color:var(--text-3);margin-top:3px}
 .whisper-msg{background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:8px 12px;font-size:12px;color:#92400e;display:flex;align-items:flex-start;gap:8px;margin:4px 0}
 .call-actions{padding:11px 14px;display:flex;align-items:center;justify-content:center;gap:10px;border-top:1px solid var(--border);background:var(--card)}
@@ -1591,10 +1591,10 @@ async function triggerOutboundCall() {
     btn.disabled = true;
 
     const summaryNodes = document.querySelectorAll('#chat-messages-out .chat-msg .c-bub');
-    const summaryArray = Array.from(summaryNodes).map(node => {
-        const isUser = node.parentElement.parentElement.classList.contains('user');
-        return (isUser ? 'Customer: ' : 'Assistant: ') + node.textContent;
-    });
+const conversationHistory = Array.from(summaryNodes).map(node => {
+    const isUser = node.parentElement.parentElement.classList.contains('user');
+    return { role: isUser ? 'user' : 'assistant', content: node.textContent };
+});
 
     try {
         const voiceSelect = document.getElementById('pg-voice-select');
@@ -1613,10 +1613,12 @@ async function triggerOutboundCall() {
         }
 
         const payload = {
-            business_id: currentBusinessId,
-            customer_name: name,
-            customer_phone: finalPhone,
-            chat_summary: summaryArray.join('\n')
+          business_id: currentBusinessId,
+          customer_name: name,
+          customer_phone: finalPhone,
+          // `chat_summary` must be a short string; send the full history in `chat_history`.
+          chat_summary: conversationHistory.map(c => c.content).join(' \n'),
+          chat_history: conversationHistory,
         };
 
         const res = await fetch(`${BASE_URL}/trigger/outbound`, {
